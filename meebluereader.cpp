@@ -11,7 +11,7 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
     m_deviceList << "DD:2B:7C:C0:A0:84" << "EB:3B:E8:48:F4:90";
 
     // Configure the discovery agent
-    m_discoveryAgent->setLowEnergyDiscoveryTimeout(5000);
+    m_discoveryAgent->setLowEnergyDiscoveryTimeout(DISCOVERY_TIMEOUT_MS);
 
     // Connect signals
     connect(m_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,
@@ -23,7 +23,7 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
             this, &MeeBlueReader::scanFinished);
 
     // Configure the timer for 500ms interval
-    m_scanTimer->setInterval(500);
+    m_scanTimer->setInterval(SCAN_INTERVAL_MS);
     connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::restartScan);
 
     // Start scanning automatically
@@ -102,7 +102,7 @@ void MeeBlueReader::restartScan()
 double MeeBlueReader::estimateDistance(int rssi) const
 {
     if (rssi == 0) {
-        return -1.0;
+        return INVALID_DISTANCE;
     }
     
     // Log-distance path loss model
