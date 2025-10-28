@@ -16,9 +16,10 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
     // Connect signals
     connect(m_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,
             this, &MeeBlueReader::deviceDiscovered);
-    connect(m_discoveryAgent, 
-            QOverload<QBluetoothDeviceDiscoveryAgent::Error>::of(&QBluetoothDeviceDiscoveryAgent::error),
-            this, &MeeBlueReader::scanError);
+    connect(m_discoveryAgent,
+            &QBluetoothDeviceDiscoveryAgent::errorOccurred,
+            this,
+            &MeeBlueReader::scanError);
     connect(m_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::finished,
             this, &MeeBlueReader::scanFinished);
 
