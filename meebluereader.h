@@ -25,6 +25,7 @@ public slots:
 
 signals:
     void beaconInfoChanged();
+    void newBeaconInfo(QString address, int rssi, double distance);
 
 private slots:
     void deviceDiscovered(const QBluetoothDeviceInfo &device);

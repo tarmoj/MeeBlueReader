@@ -62,9 +62,10 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
     if (isTargetDevice(device)) {
         int rssi = device.rssi();
         double distance = estimateDistance(rssi);
+        QString address = device.address().toString();
         
         QString info = QString("%1 - %2 dB - %3 m")
-                        .arg(device.address().toString())
+                        .arg(address)
                         .arg(rssi)
                         .arg(distance, 0, 'f', 2);
         
@@ -72,6 +73,7 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
         
         m_beaconInfo = info;
         emit beaconInfoChanged();
+        emit newBeaconInfo(address, rssi, distance);
     }
 }
 
