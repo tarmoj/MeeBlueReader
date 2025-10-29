@@ -3,6 +3,7 @@
 
 #ifdef Q_OS_ANDROID
 #include <QCoreApplication>
+#include <QJniObject>
 
 // Static instance pointer for JNI callback routing
 NativeBleScanner *NativeBleScanner::s_instance = nullptr;
