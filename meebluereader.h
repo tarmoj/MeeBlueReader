@@ -6,6 +6,8 @@
 #include <QBluetoothDeviceInfo>
 #include <QTimer>
 #include <QStringList>
+#include <QMap>
+#include <QList>
 #include <cmath>
 
 class MeeBlueReader : public QObject
@@ -32,15 +34,20 @@ private slots:
     void scanError(QBluetoothDeviceDiscoveryAgent::Error error);
     void scanFinished();
     void restartScan();
+    void emitSmoothedReadings();
 
 private:
     double estimateDistance(int rssi) const;
     bool isTargetDevice(const QBluetoothDeviceInfo &device) const;
+    int calculateMedianRSSI(const QList<int> &readings) const;
 
     QBluetoothDeviceDiscoveryAgent *m_discoveryAgent;
     QTimer *m_scanTimer;
     QStringList m_deviceList;
     QString m_beaconInfo;
+    
+    // Store last 4 RSSI readings per beacon address
+    QMap<QString, QList<int>> m_rssiHistory;
     
     // Distance calculation parameters
     static constexpr int TX_POWER = -40;  // Measured power at 1 meter
@@ -48,8 +55,9 @@ private:
     static constexpr double INVALID_DISTANCE = -1.0;  // Invalid distance indicator
     
     // Timing parameters
-    static constexpr int SCAN_INTERVAL_MS = 500;       // Scan interval in milliseconds
+    static constexpr int SCAN_INTERVAL_MS = 250;       // Scan interval in milliseconds
     static constexpr int DISCOVERY_TIMEOUT_MS = 5000;  // Discovery timeout in milliseconds
+    static constexpr int MAX_RSSI_HISTORY = 4;         // Number of readings for median calculation
 };
 
 #endif // MEEBLUEREADER_H

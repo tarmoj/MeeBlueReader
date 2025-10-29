@@ -1,5 +1,6 @@
 #include "meebluereader.h"
 #include <QDebug>
+#include <algorithm>
 
 MeeBlueReader::MeeBlueReader(QObject *parent)
     : QObject(parent)
@@ -23,9 +24,10 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
     connect(m_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::finished,
             this, &MeeBlueReader::scanFinished);
 
-    // Configure the timer for 500ms interval
+    // Configure the timer for 250ms interval
     m_scanTimer->setInterval(SCAN_INTERVAL_MS);
     connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::restartScan);
+    connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::emitSmoothedReadings);
 
     // Start scanning automatically
     startScanning();
@@ -61,19 +63,48 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
 {
     if (isTargetDevice(device)) {
         int rssi = device.rssi();
-        double distance = estimateDistance(rssi);
         QString address = device.address().toString();
         
-        QString info = QString("%1 - %2 dB - %3 m")
-                        .arg(address)
-                        .arg(rssi)
-                        .arg(distance, 0, 'f', 2);
+        // Store RSSI reading in history
+        if (!m_rssiHistory.contains(address)) {
+            m_rssiHistory[address] = QList<int>();
+        }
         
-        qDebug() << "Beacon found:" << info;
+        QList<int> &history = m_rssiHistory[address];
+        history.append(rssi);
         
-        m_beaconInfo = info;
-        emit beaconInfoChanged();
-        emit newBeaconInfo(address, rssi, distance);
+        // Keep only last 4 readings
+        if (history.size() > MAX_RSSI_HISTORY) {
+            history.removeFirst();
+        }
+        
+        qDebug() << "Beacon" << address << "RSSI:" << rssi << "History size:" << history.size();
+    }
+}
+
+void MeeBlueReader::emitSmoothedReadings()
+{
+    // Emit smoothed readings for all beacons in history
+    for (auto it = m_rssiHistory.begin(); it != m_rssiHistory.end(); ++it) {
+        QString address = it.key();
+        QList<int> readings = it.value();
+        
+        if (!readings.isEmpty()) {
+            // Calculate median RSSI
+            int smoothedRSSI = calculateMedianRSSI(readings);
+            double distance = estimateDistance(smoothedRSSI);
+            
+            QString info = QString("%1 - %2 dB - %3 m")
+                            .arg(address)
+                            .arg(smoothedRSSI)
+                            .arg(distance, 0, 'f', 2);
+            
+            qDebug() << "Emitting smoothed:" << info << "(from" << readings.size() << "readings)";
+            
+            m_beaconInfo = info;
+            emit beaconInfoChanged();
+            emit newBeaconInfo(address, smoothedRSSI, distance);
+        }
     }
 }
 
@@ -114,6 +145,26 @@ double MeeBlueReader::estimateDistance(int rssi) const
     double distance = std::pow(10.0, ratio);
     
     return distance;
+}
+
+int MeeBlueReader::calculateMedianRSSI(const QList<int> &readings) const
+{
+    if (readings.isEmpty()) {
+        return 0;
+    }
+    
+    // Create a sorted copy of the readings
+    QList<int> sortedReadings = readings;
+    std::sort(sortedReadings.begin(), sortedReadings.end());
+    
+    int size = sortedReadings.size();
+    if (size % 2 == 0) {
+        // Even number of readings: average of two middle values
+        return (sortedReadings[size/2 - 1] + sortedReadings[size/2]) / 2;
+    } else {
+        // Odd number of readings: middle value
+        return sortedReadings[size/2];
+    }
 }
 
 bool MeeBlueReader::isTargetDevice(const QBluetoothDeviceInfo &device) const
