@@ -1,10 +1,11 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QPermission>        // Qt6 permission API
+
 #include "meebluereader.h"
 
 #ifdef Q_OS_ANDROID
+#include <QPermission>        // Qt6 permission API
 #include <QJniEnvironment>
 #include <QtCore/private/qandroidextras_p.h>
 

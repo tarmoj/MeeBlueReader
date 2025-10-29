@@ -55,8 +55,8 @@ private:
     static constexpr double INVALID_DISTANCE = -1.0;  // Invalid distance indicator
     
     // Timing parameters
-    static constexpr int SCAN_INTERVAL_MS =  1500; //250;       // Scan interval in milliseconds
-    static constexpr int DISCOVERY_TIMEOUT_MS = 5000;  // Discovery timeout in milliseconds
+    static constexpr int SCAN_INTERVAL_MS =  5000; //250;       // Scan interval in milliseconds
+    static constexpr int DISCOVERY_TIMEOUT_MS = 25000;  // Discovery timeout in milliseconds
     static constexpr int MAX_RSSI_HISTORY = 4;         // Number of readings for median calculation
 };
 

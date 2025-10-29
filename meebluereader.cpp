@@ -78,7 +78,7 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
             history.removeFirst();
         }
         
-        // qDebug() << "Beacon" << address << "RSSI:" << rssi << "History size:" << history.size();
+        qDebug() << "Beacon" << address << "RSSI:" << rssi << "History size:" << history.size();
     }
 }
 
@@ -127,6 +127,9 @@ void MeeBlueReader::restartScan()
     // Stop current scan if still active
     if (m_discoveryAgent->isActive()) {
         m_discoveryAgent->stop();
+        qDebug() << "Stop agent";
+        QTimer::singleShot(3000, this, &MeeBlueReader::restartScan);
+        return;
     }
     
     // Start a new scan
