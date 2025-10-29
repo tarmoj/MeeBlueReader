@@ -2,6 +2,10 @@ build/*
 
 CMakeLists.txt.user
 
+# Gradle build artifacts
+android/.gradle/
+android/build/
+
 # CodeQL generated files
 _codeql_detected_source_root
 
