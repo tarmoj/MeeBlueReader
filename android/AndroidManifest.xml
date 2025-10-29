@@ -17,7 +17,15 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/qtprovider_paths"/>
         </provider>
     </application>
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
+
+    <!-- Permissions: keep these for older devices and add Android 12+ permissions -->
+       <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+       <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+       <uses-permission android:name="android.permission.BLUETOOTH"/>
+
+       <!-- Android 12 (API 31) new runtime Bluetooth permissions: add these so you can request them at runtime -->
+       <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+       <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+       <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
+
 </manifest>

@@ -9,6 +9,8 @@
 
 bool requestPermission(QString permission)
 {
+
+
     auto r = QtAndroidPrivate::requestPermission(permission).result();
     if (r == QtAndroidPrivate::Denied) {
         qDebug() << permission << " Denied.";
@@ -33,11 +35,9 @@ int main(int argc, char *argv[])
     //requestPermission("android.permission.WRITE_EXTERNAL_STORAGE");
 
     // List of permissions to consider. Keep both "old" location permission (for scans on <= Android 11) // and Android 12+ specific BLUETOOTH_* permissions.
-    const QStringList permissions = { QStringLiteral("android.permission.BLUETOOTH"),
-        QStringLiteral("android.permission.BLUETOOTH_ADMIN"),
-        QStringLiteral("android.permission.ACCESS_FINE_LOCATION"), QStringLiteral("android.permission.BLUETOOTH_SCAN"), QStringLiteral("android.permission.BLUETOOTH_CONNECT"),
-        QStringLiteral("android.permission.BLUETOOTH_ADVERTISE")
-    };
+    const QStringList permissions = QStringList()  << "android.permission.BLUETOOTH_SCAN"
+                                    << "android.permission.BLUETOOTH_CONNECT"
+                                    << "android.permission.ACCESS_FINE_LOCATION";
 
     for (const QString &permission : permissions) {
         requestPermission(permission);
