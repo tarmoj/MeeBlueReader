@@ -22,21 +22,20 @@ public:
     void stopScan();
     bool isScanning() const;
 
+#ifdef Q_OS_ANDROID
+    // Instance method to handle the callback - public so JNI function can access
+    void handleDeviceDiscovered(const QString &address, const QString &name, int rssi);
+    
+    // Static pointer to the current instance for callback routing - public for JNI access
+    static NativeBleScanner *s_instance;
+#endif
+
 signals:
     void deviceDiscovered(const QString &address, const QString &name, int rssi);
 
 private:
 #ifdef Q_OS_ANDROID
     QJniObject m_javaScanner;
-    
-    // Static JNI callback that will be called from Java
-    static void onDeviceDiscoveredCallback(JNIEnv *env, jobject thiz, jstring address, jstring name, jint rssi);
-    
-    // Instance method to handle the callback
-    void handleDeviceDiscovered(const QString &address, const QString &name, int rssi);
-    
-    // Static pointer to the current instance for callback routing
-    static NativeBleScanner *s_instance;
 #endif
 };
 
