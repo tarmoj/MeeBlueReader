@@ -12,7 +12,8 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
     m_deviceList << "DD:2B:7C:C0:A0:84" << "EB:3B:E8:48:F4:90";
 
     // Configure the discovery agent
-    m_discoveryAgent->setLowEnergyDiscoveryTimeout(DISCOVERY_TIMEOUT_MS);
+    m_discoveryAgent->setLowEnergyDiscoveryTimeout(0);
+    m_discoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
 
     // Connect signals
     connect(m_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,
@@ -25,12 +26,12 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
             this, &MeeBlueReader::scanFinished);
 
     // Configure the timer for 250ms interval
-    m_scanTimer->setInterval(SCAN_INTERVAL_MS);
-    connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::restartScan);
-    connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::emitSmoothedReadings);
+    // m_scanTimer->setInterval(SCAN_INTERVAL_MS);
+    // connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::restartScan);
+    // connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::emitSmoothedReadings);
 
     // Start scanning automatically
-    startScanning();
+    //startScanning();
 }
 
 MeeBlueReader::~MeeBlueReader()
@@ -47,13 +48,13 @@ void MeeBlueReader::startScanning()
 {
     qDebug() << "Starting MeeBlue beacon scanning...";
     m_discoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
-    m_scanTimer->start();
+    // m_scanTimer->start();
 }
 
 void MeeBlueReader::stopScanning()
 {
     qDebug() << "Stopping MeeBlue beacon scanning...";
-    m_scanTimer->stop();
+    //m_scanTimer->stop();
     if (m_discoveryAgent->isActive()) {
         m_discoveryAgent->stop();
     }
@@ -61,6 +62,16 @@ void MeeBlueReader::stopScanning()
 
 void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
 {
+    if (!device.isValid()) return;
+
+    //test
+    const QString addr = device.address().toString();
+    const qint16 rssi = device.rssi();
+
+    // Every new advertisement will trigger this again with updated RSSI
+    qDebug() << "Beacon" << addr << "RSSI" << rssi;
+    qDebug() << device.name();
+
     if (isTargetDevice(device)) {
         int rssi = device.rssi();
         QString address = device.address().toString();

@@ -8,7 +8,6 @@
 #include <QStringList>
 #include <QMap>
 #include <QList>
-#include <cmath>
 
 class MeeBlueReader : public QObject
 {
