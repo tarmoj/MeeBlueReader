@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QPermission>        // Qt6 permission API
 #include "meebluereader.h"
 
 #ifdef Q_OS_ANDROID
@@ -34,15 +35,44 @@ int main(int argc, char *argv[])
 
     //requestPermission("android.permission.WRITE_EXTERNAL_STORAGE");
 
-    // List of permissions to consider. Keep both "old" location permission (for scans on <= Android 11) // and Android 12+ specific BLUETOOTH_* permissions.
-    const QStringList permissions = QStringList()  << "android.permission.BLUETOOTH_SCAN"
-                                    << "android.permission.BLUETOOTH_CONNECT"
-                                    << "android.permission.ACCESS_FINE_LOCATION";
 
-    for (const QString &permission : permissions) {
-        requestPermission(permission);
+
+    using namespace Qt::StringLiterals;
+
+    // Android 12+ uses BLUETOOTH_SCAN and BLUETOOTH_CONNECT
+    QBluetoothPermission btScanPerm;
+    btScanPerm.setCommunicationModes(QBluetoothPermission::Access);
+    QBluetoothPermission btConnectPerm;
+    btConnectPerm.setCommunicationModes(QBluetoothPermission::Default); // not sure if correct
+
+    // Some devices (Android 11 and below) still require fine location
+    QLocationPermission locationPerm;
+    locationPerm.setAccuracy(QLocationPermission::Precise);
+
+    // Check and request Bluetooth scan
+    auto result = qApp->checkPermission(btScanPerm);
+    qDebug() << "Scan permission: " << result;
+    if (qApp->checkPermission(btScanPerm) != Qt::PermissionStatus::Granted) {
+        qApp->requestPermission(btScanPerm, [&](const QPermission &p) {
+            qDebug() << "Bluetooth scan permission result:" << p.status();
+        });
     }
 
+    // Check and request Bluetooth connect
+    // if (qApp->checkPermission(btConnectPerm) != Qt::PermissionStatus::Granted) {
+    //     qApp->requestPermission(btConnectPerm, [&](const QPermission &p) {
+    //         qDebug() << "Bluetooth connect permission result:" << p.status();
+    //     });
+    // }
+
+    // Check and request location (for pre-Android 12)
+    // if (qApp->checkPermission(locationPerm) != Qt::PermissionStatus::Granted) {
+    //     qApp->requestPermission(locationPerm, [&](const QPermission &p) {
+    //         qDebug() << "Location permission result:" << p.status();
+    //     });
+    // }
+
+/*
     //keep screen on:
     QJniObject activity
         = QNativeInterface::QAndroidApplication::context(); //  QtAndroid::androidActivity();
@@ -69,7 +99,7 @@ int main(int argc, char *argv[])
             env->ExceptionClear();
         } //Clear any possible pending exceptions.
     }
-
+*/
 #endif
 
     QQmlApplicationEngine engine;
