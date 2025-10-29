@@ -13,6 +13,8 @@ qt_add_executable(appMeeBlueReader
     main.cpp
     meebluereader.h
     meebluereader.cpp
+    nativeblescanner.h
+    nativeblescanner.cpp
 )
 
 qt_add_qml_module(appMeeBlueReader

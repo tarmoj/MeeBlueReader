@@ -8,17 +8,21 @@
 #include <QStringList>
 #include <QMap>
 #include <QList>
+#include "nativeblescanner.h"
 
 class MeeBlueReader : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString beaconInfo READ beaconInfo NOTIFY beaconInfoChanged)
+    Q_PROPERTY(bool useNativeScanner READ useNativeScanner WRITE setUseNativeScanner NOTIFY useNativeScannerChanged)
 
 public:
     explicit MeeBlueReader(QObject *parent = nullptr);
     ~MeeBlueReader();
 
     QString beaconInfo() const;
+    bool useNativeScanner() const;
+    void setUseNativeScanner(bool use);
 
 public slots:
     void startScanning();
@@ -27,9 +31,11 @@ public slots:
 signals:
     void beaconInfoChanged();
     void newBeaconInfo(QString address, int rssi, double distance);
+    void useNativeScannerChanged();
 
 private slots:
     void deviceDiscovered(const QBluetoothDeviceInfo &device);
+    void nativeDeviceDiscovered(const QString &address, const QString &name, int rssi);
     void scanError(QBluetoothDeviceDiscoveryAgent::Error error);
     void scanFinished();
     void restartScan();
@@ -37,13 +43,17 @@ private slots:
 
 private:
     double estimateDistance(int rssi) const;
+    bool isTargetDevice(const QString &address, const QString &name) const;
     bool isTargetDevice(const QBluetoothDeviceInfo &device) const;
     int calculateMedianRSSI(const QList<int> &readings) const;
+    void processDeviceData(const QString &address, const QString &name, int rssi);
 
     QBluetoothDeviceDiscoveryAgent *m_discoveryAgent;
+    NativeBleScanner *m_nativeScanner;
     QTimer *m_scanTimer;
     QStringList m_deviceList;
     QString m_beaconInfo;
+    bool m_useNativeScanner;
     
     // Store last 4 RSSI readings per beacon address
     QMap<QString, QList<int>> m_rssiHistory;

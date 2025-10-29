@@ -60,18 +60,18 @@ int main(int argc, char *argv[])
     }
 
     // Check and request Bluetooth connect
-    // if (qApp->checkPermission(btConnectPerm) != Qt::PermissionStatus::Granted) {
-    //     qApp->requestPermission(btConnectPerm, [&](const QPermission &p) {
-    //         qDebug() << "Bluetooth connect permission result:" << p.status();
-    //     });
-    // }
+    if (qApp->checkPermission(btConnectPerm) != Qt::PermissionStatus::Granted) {
+        qApp->requestPermission(btConnectPerm, [&](const QPermission &p) {
+            qDebug() << "Bluetooth connect permission result:" << p.status();
+        });
+    }
 
     // Check and request location (for pre-Android 12)
-    // if (qApp->checkPermission(locationPerm) != Qt::PermissionStatus::Granted) {
-    //     qApp->requestPermission(locationPerm, [&](const QPermission &p) {
-    //         qDebug() << "Location permission result:" << p.status();
-    //     });
-    // }
+    if (qApp->checkPermission(locationPerm) != Qt::PermissionStatus::Granted) {
+        qApp->requestPermission(locationPerm, [&](const QPermission &p) {
+            qDebug() << "Location permission result:" << p.status();
+        });
+    }
 
 /*
     //keep screen on:
