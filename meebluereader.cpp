@@ -78,7 +78,7 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
             history.removeFirst();
         }
         
-        qDebug() << "Beacon" << address << "RSSI:" << rssi << "History size:" << history.size();
+        // qDebug() << "Beacon" << address << "RSSI:" << rssi << "History size:" << history.size();
     }
 }
 
@@ -94,15 +94,15 @@ void MeeBlueReader::emitSmoothedReadings()
             int smoothedRSSI = calculateMedianRSSI(readings);
             double distance = estimateDistance(smoothedRSSI);
             
-            QString info = QString("%1 - %2 dB - %3 m")
+            QString info = QString("%1 | %2 dB | %3 m")
                             .arg(address)
                             .arg(smoothedRSSI)
                             .arg(distance, 0, 'f', 2);
             
-            qDebug() << "Emitting smoothed:" << info << "(from" << readings.size() << "readings)";
+            //qDebug() << "Emitting smoothed:" << info << "(from" << readings.size() << "readings)";
             
             m_beaconInfo = info;
-            emit beaconInfoChanged();
+            // emit beaconInfoChanged();
             emit newBeaconInfo(address, smoothedRSSI, distance);
         }
     }

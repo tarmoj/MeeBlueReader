@@ -49,8 +49,8 @@ Window {
                         
                         Text {
                             anchors.centerIn: parent
-                            text: model.address + " - " + model.rssi + " dB - " + model.distance + " m"
-                            font.pixelSize: 16
+                            text: model.address + " | " + model.rssi + " dB | " + model.distance + " m"
+                            font.pointSize: 10
                         }
                     }
                     

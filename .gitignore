@@ -1,6 +1,6 @@
 build/*
 
-*.user
+CMakeLists.txt.user
 
 # CodeQL generated files
 _codeql_detected_source_root
