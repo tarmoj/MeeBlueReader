@@ -26,6 +26,11 @@ public class NativeBleScanner {
     
     // Native callback method to be called from C++
     private native void onDeviceDiscovered(String address, String name, int rssi);
+
+
+    static {
+            System.loadLibrary("appMeeBlueReader_arm64-v8a"); // Load the native library
+    }
     
     public NativeBleScanner(Context context) {
         mContext = context;

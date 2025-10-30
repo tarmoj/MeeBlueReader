@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.tarmoj.meeblue" android:installLocation="auto" android:versionCode="-- %%INSERT_VERSION_CODE%% --" android:versionName="-- %%INSERT_VERSION_NAME%% --">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto" android:versionCode="1" android:versionName="0.1.0">
     <!-- %%INSERT_PERMISSIONS -->
     <!-- %%INSERT_FEATURES -->
     <supports-screens android:anyDensity="true" android:largeScreens="true" android:normalScreens="true" android:smallScreens="true"/>
@@ -22,10 +22,10 @@
        <!-- Android 12 (API 31) new runtime Bluetooth permissions: add these so you can request them at runtime -->
        <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
        <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
-       <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
-       
+       <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
+
        <!-- For Android 11 and below, location permissions are required for BLE scanning -->
-       <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-       <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+       <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+       <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
 </manifest>

@@ -15,6 +15,7 @@ qt_add_executable(appMeeBlueReader
     meebluereader.cpp
     nativeblescanner.h
     nativeblescanner.cpp
+    android/src/org/tarmoj/meeblue/NativeBleScanner.java
 )
 
 qt_add_qml_module(appMeeBlueReader
@@ -22,7 +23,7 @@ qt_add_qml_module(appMeeBlueReader
     VERSION 1.0
     QML_FILES
         Main.qml
-        RESOURCES android/AndroidManifest.xml android/build.gradle android/res/values/libs.xml android/res/xml/qtprovider_paths.xml android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.properties android/gradle.properties android/gradlew android/gradlew.bat android/src/org/tarmoj/meeblue/NativeBleScanner.java
+        RESOURCES android/AndroidManifest.xml android/build.gradle android/res/values/libs.xml android/res/xml/qtprovider_paths.xml android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.properties android/gradle.properties android/gradlew android/gradlew.bat
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -57,6 +58,24 @@ if (APPLE)
             MACOSX_BUNDLE_INFO_PLIST "${SHARED_PLIST_DIR}/Info.cmake.macos.plist"
         )
     endif()
+endif()
+
+if(ANDROID)
+
+    # Directory that contains AndroidManifest.xml and android/src/...
+    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/android")
+
+    set_target_properties(appMeeBlueReader PROPERTIES
+        ANDROID_PACKAGE_SOURCE_DIR "${ANDROID_PACKAGE_SOURCE_DIR}"
+        QT_ANDROID_PACKAGE_NAME "org.tarmoj.meeblue"  # optional, manifest should match this
+    )
+
+    # Add the java sources (prefer listing files or exact path)
+    set_property(TARGET appMeeBlueReader APPEND PROPERTY
+        QT_ANDROID_EXTRA_SOURCES
+            "${ANDROID_PACKAGE_SOURCE_DIR}/src/org/tarmoj/meeblue/NativeBleScanner.java"
+    )
+
 endif()
 
 
