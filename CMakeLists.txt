@@ -15,7 +15,6 @@ qt_add_executable(appMeeBlueReader
     meebluereader.cpp
     nativeblescanner.h
     nativeblescanner.cpp
-    android/src/org/tarmoj/meeblue/NativeBleScanner.java
 )
 
 qt_add_qml_module(appMeeBlueReader

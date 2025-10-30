@@ -27,9 +27,13 @@ public class NativeBleScanner {
     // Native callback method to be called from C++
     private native void onDeviceDiscovered(String address, String name, int rssi);
 
-
     static {
-            System.loadLibrary("appMeeBlueReader_arm64-v8a"); // Load the native library
+        // Load the native library - Qt will provide the correct library name
+        try {
+            System.loadLibrary("appMeeBlueReader");
+        } catch (UnsatisfiedLinkError e) {
+            Log.e(TAG, "Failed to load native library: " + e.getMessage());
+        }
     }
     
     public NativeBleScanner(Context context) {
