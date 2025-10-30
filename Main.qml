@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 
 Window {
     width: 640
@@ -22,9 +23,37 @@ Window {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
             
+            // Scanner mode indicator
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 10
+                
+                Text {
+                    text: "Scanner:"
+                    font.pixelSize: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                
+                Text {
+                    text: meeBlueReader.useNativeScanner ? "Native Android" : "Qt BLE"
+                    font.pixelSize: 12
+                    font.bold: true
+                    color: meeBlueReader.useNativeScanner ? "#4CAF50" : "#2196F3"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                
+                Button {
+                    text: "Switch"
+                    visible: Qt.platform.os === "android"
+                    onClicked: {
+                        meeBlueReader.useNativeScanner = !meeBlueReader.useNativeScanner
+                    }
+                }
+            }
+            
             Rectangle {
                 width: parent.width
-                height: parent.height - 100
+                height: parent.height - 150
                 color: "white"
                 border.color: "#cccccc"
                 border.width: 2

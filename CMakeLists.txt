@@ -13,6 +13,8 @@ qt_add_executable(appMeeBlueReader
     main.cpp
     meebluereader.h
     meebluereader.cpp
+    nativeblescanner.h
+    nativeblescanner.cpp
 )
 
 qt_add_qml_module(appMeeBlueReader
@@ -55,6 +57,24 @@ if (APPLE)
             MACOSX_BUNDLE_INFO_PLIST "${SHARED_PLIST_DIR}/Info.cmake.macos.plist"
         )
     endif()
+endif()
+
+if(ANDROID)
+
+    # Directory that contains AndroidManifest.xml and android/src/...
+    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/android")
+
+    set_target_properties(appMeeBlueReader PROPERTIES
+        ANDROID_PACKAGE_SOURCE_DIR "${ANDROID_PACKAGE_SOURCE_DIR}"
+        QT_ANDROID_PACKAGE_NAME "org.tarmoj.meeblue"  # optional, manifest should match this
+    )
+
+    # Add the java sources (prefer listing files or exact path)
+    set_property(TARGET appMeeBlueReader APPEND PROPERTY
+        QT_ANDROID_EXTRA_SOURCES
+            "${ANDROID_PACKAGE_SOURCE_DIR}/src/org/tarmoj/meeblue/NativeBleScanner.java"
+    )
+
 endif()
 
 
