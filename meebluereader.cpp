@@ -1,6 +1,7 @@
 #include "meebluereader.h"
 #include <QDebug>
 #include <algorithm>
+#include <QLowEnergyController>
 
 MeeBlueReader::MeeBlueReader(QObject *parent)
     : QObject(parent)
@@ -65,20 +66,56 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
     if (!device.isValid()) return;
 
     //test
-    const QString addr = device.address().toString();
-    const qint16 rssi = device.rssi();
+    // const QString addr = device.address().toString();
+    // const qint16 rssi = device.rssi();
 
-    // Every new advertisement will trigger this again with updated RSSI
-    qDebug() << "Beacon" << addr << "RSSI" << rssi;
-    qDebug() << device.name();
+    // // Every new advertisement will trigger this again with updated RSSI
+    // qDebug() << "Beacon" << addr << "RSSI" << rssi;
+    // qDebug() << device.name();
 
     if (isTargetDevice(device)) {
         int rssi = device.rssi();
-        QString address = device.address().toString();
+
+        QString address;
+
+
+#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+        address = device.deviceUuid().toString(); // not really address, but should maybe work
+#else
+        address = device.address().toString();
+#endif
+
+
         
         // Store RSSI reading in history
         if (!m_rssiHistory.contains(address)) {
             m_rssiHistory[address] = QList<int>();
+
+            QLowEnergyController *controller = QLowEnergyController::createCentral(device, this);
+            connect(controller, &QLowEnergyController::connected, this, [controller, address]() {
+                QTimer *timer = new QTimer(controller);
+                timer->setInterval(1000); // 1 second
+
+                // Call readRssi() every timeout
+                QObject::connect(timer, &QTimer::timeout, controller, [controller, address]() {
+                    controller->readRssi();
+                    qDebug() << "Read RSSI " << address;
+                });
+
+                timer->start();
+
+            });
+
+            connect(controller, &QLowEnergyController::rssiRead, this, [this, address](qint16 rssi){
+                double distance = estimateDistance(rssi);
+                QMetaObject::invokeMethod(this, [=](){
+                        emit newBeaconInfo(address, rssi, distance);
+                    }, Qt::QueuedConnection);
+            });
+
+
+            controller->connectToDevice();
+
         }
         
         QList<int> &history = m_rssiHistory[address];
@@ -89,7 +126,17 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
             history.removeFirst();
         }
         
-        qDebug() << "Beacon" << address << "RSSI:" << rssi << "History size:" << history.size();
+        //emit newBeaconInfo(address, rssi, estimateDistance(rssi)); // temporary, no smoothing
+
+        double distance = estimateDistance(rssi);
+
+        // Always emit to QML on the main thread
+        QMetaObject::invokeMethod(this, [=]() {
+                emit newBeaconInfo(address, rssi, distance);
+            }, Qt::QueuedConnection);
+
+
+        qDebug() << "Beacon" << address << device.name() << "RSSI:" << rssi << "History size:" << history.size();
     }
 }
 
@@ -113,7 +160,7 @@ void MeeBlueReader::emitSmoothedReadings()
             //qDebug() << "Emitting smoothed:" << info << "(from" << readings.size() << "readings)";
             
             m_beaconInfo = info;
-            // emit beaconInfoChanged();
+            emit beaconInfoChanged();
             emit newBeaconInfo(address, smoothedRSSI, distance);
         }
     }

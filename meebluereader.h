@@ -49,7 +49,7 @@ private:
     QMap<QString, QList<int>> m_rssiHistory;
     
     // Distance calculation parameters
-    static constexpr int TX_POWER = -40;  // Measured power at 1 meter
+    static constexpr int TX_POWER = -53;  // Measured power at 1 meter
     static constexpr double N = 2.0;      // Environmental factor
     static constexpr double INVALID_DISTANCE = -1.0;  // Invalid distance indicator
     

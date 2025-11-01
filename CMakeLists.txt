@@ -44,17 +44,11 @@ target_link_libraries(appMeeBlueReader PUBLIC
 include(GNUInstallDirs)
 
 if (APPLE)
-    # Using absolute path for shared plist files is a Ninja bug workaround
-    get_filename_component(SHARED_PLIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../shared ABSOLUTE)
-    if (IOS)
-        set_target_properties(appMeeBlueReader PROPERTIES
-            MACOSX_BUNDLE_INFO_PLIST "${SHARED_PLIST_DIR}/Info.cmake.ios.plist"
-        )
-    else()
-        set_target_properties(appMeeBlueReader PROPERTIES
-            MACOSX_BUNDLE_INFO_PLIST "${SHARED_PLIST_DIR}/Info.cmake.macos.plist"
-        )
-    endif()
+
+    set_target_properties(appMeeBlueReader PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Info.plist"
+    )
+
 endif()
 
 

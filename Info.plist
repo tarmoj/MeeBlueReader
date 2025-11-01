@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <!-- Basic App Information -->
+    <key>CFBundleDisplayName</key>
+    <string>MeeBlueReader</string>
+    <key>CFBundleName</key>
+    <string>MeeBlueReader</string>
+    <key>CFBundleIdentifier</key>
+    <string>org.tarmoj.meeblue</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleExecutable</key>
+    <string>appMeeBlueReader</string>
+
+    <!-- Platform Support -->
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string> <!-- macOS 13 / iOS 16 -->
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer> <!-- iPhone / iPod -->
+        <integer>2</integer> <!-- iPad -->
+    </array>
+
+    <!-- App Category (optional but recommended for macOS) -->
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+
+    <!-- Bluetooth Permissions -->
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>This app uses Bluetooth to discover and connect to nearby Meeblue beacons.</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>MeeBlueReader needs Bluetooth access to communicate with nearby devices.</string>
+
+    <!-- (Optional) Background modes for BLE scanning -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>bluetooth-central</string>
+        <string>bluetooth-peripheral</string>
+    </array>
+
+    <!-- Qt-specific keys -->
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <!--<key>NSPrincipalClass</key>
+    <string>NSApplication</string>  <- this is for Mac -->
+    <key>NSPrincipalClass</key>
+    <string>UIApplication</string>
+
+    <!-- iOS Specific (Safe area, scenes, etc.) -->
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIRequiresFullScreen</key>
+    <true/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+</dict>
+</plist>
