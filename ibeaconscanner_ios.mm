@@ -11,6 +11,11 @@
 @property (nonatomic, strong) CLLocationManager *locationManager;
 @property (nonatomic, strong) NSMutableArray<CLBeaconRegion *> *monitoredRegions;
 @property (nonatomic, strong) NSMutableArray<CLBeaconIdentityConstraint *> *constraints;
+@property (nonatomic, strong) NSMutableArray<NSString *> *beaconUUIDs;
+
+- (instancetype)initWithQtScanner:(IBeaconScanner *)scanner;
+- (void)setBeaconUUIDs:(const QStringList &)uuids;
+
 @end
 
 @implementation IBeaconScannerDelegate
@@ -24,12 +29,28 @@
         _monitoredRegions = [[NSMutableArray alloc] init];
         _constraints = [[NSMutableArray alloc] init];
         
+        // Default beacon UUID (common MeeBlue beacon UUID)
+        _beaconUUIDs = [[NSMutableArray alloc] initWithArray:@[
+            @"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"
+        ]];
+        
         // Request authorization for location services
         if ([_locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)]) {
             [_locationManager requestWhenInUseAuthorization];
         }
     }
     return self;
+}
+
+- (void)setBeaconUUIDs:(const QStringList &)uuids {
+    [_beaconUUIDs removeAllObjects];
+    
+    for (const QString &uuid : uuids) {
+        NSString *nsUuid = uuid.toNSString();
+        [_beaconUUIDs addObject:nsUuid];
+    }
+    
+    NSLog(@"Beacon UUIDs updated: %@", _beaconUUIDs);
 }
 
 - (void)startScanning {
@@ -95,11 +116,6 @@
     QVariantList qtBeacons;
     
     for (CLBeacon *beacon in beacons) {
-        // Only include beacons with valid proximity (not unknown)
-        if (beacon.proximity == CLProximityUnknown) {
-            continue;
-        }
-        
         QVariantMap beaconMap;
         
         // UUID as string
@@ -241,6 +257,16 @@ void IBeaconScanner::stopScanning()
     if (m_nativeScanner) {
         IBeaconScannerDelegate *delegate = (__bridge IBeaconScannerDelegate *)m_nativeScanner;
         [delegate stopScanning];
+    }
+}
+
+void IBeaconScanner::setBeaconUUIDs(const QStringList &uuids)
+{
+    qDebug() << "IBeaconScanner::setBeaconUUIDs() called with" << uuids.size() << "UUIDs";
+    
+    if (m_nativeScanner) {
+        IBeaconScannerDelegate *delegate = (__bridge IBeaconScannerDelegate *)m_nativeScanner;
+        [delegate setBeaconUUIDs:uuids];
     }
 }
 
