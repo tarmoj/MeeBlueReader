@@ -37,8 +37,9 @@
     
     // Define the iBeacon regions to monitor
     // Using common MeeBlue beacon UUIDs - adjust as needed
+    // df4f904b-fcb3-4dad-2454-4f06a4eb35cd
     NSArray *beaconUUIDs = @[
-        [[NSUUID alloc] initWithUUIDString:@"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"],
+        [[NSUUID alloc] initWithUUIDString:@"D35B76E2-E01C-9FAC-BA8D-7CE20BDBA0C6"],
         // Add more UUIDs as needed for different beacon types
     ];
     

@@ -110,8 +110,8 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     
     // Create and register MeeBlueReader instance
-    MeeBlueReader reader;
-    engine.rootContext()->setContextProperty("meeBlueReader", &reader);
+    // MeeBlueReader reader;
+    // engine.rootContext()->setContextProperty("meeBlueReader", &reader);
     
 #ifdef Q_OS_IOS
     // Create and register IBeaconScanner instance for iOS
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     
     qDebug() << "iOS iBeacon scanner initialized and started";
 #endif
-    
+
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.loadFromModule("MeeBlueReader", "Main");
+
 
     return app.exec();
 }
