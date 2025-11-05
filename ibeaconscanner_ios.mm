@@ -10,6 +10,7 @@
 @property (nonatomic, assign) IBeaconScanner *qtScanner;
 @property (nonatomic, strong) CLLocationManager *locationManager;
 @property (nonatomic, strong) NSMutableArray<CLBeaconRegion *> *monitoredRegions;
+@property (nonatomic, strong) NSMutableArray<CLBeaconIdentityConstraint *> *constraints;
 @end
 
 @implementation IBeaconScannerDelegate
@@ -21,6 +22,7 @@
         _locationManager = [[CLLocationManager alloc] init];
         _locationManager.delegate = self;
         _monitoredRegions = [[NSMutableArray alloc] init];
+        _constraints = [[NSMutableArray alloc] init];
         
         // Request authorization for location services
         if ([_locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)]) {
@@ -41,17 +43,20 @@
     ];
     
     for (NSUUID *uuid in beaconUUIDs) {
-        CLBeaconRegion *region = [[CLBeaconRegion alloc] initWithUUID:uuid
-                                                            identifier:[uuid UUIDString]];
+        // Use modern API for iOS 13+
+        CLBeaconIdentityConstraint *constraint = [[CLBeaconIdentityConstraint alloc] initWithUUID:uuid];
+        CLBeaconRegion *region = [[CLBeaconRegion alloc] initWithBeaconIdentityConstraint:constraint
+                                                                                identifier:[uuid UUIDString]];
         region.notifyEntryStateOnDisplay = YES;
         region.notifyOnEntry = YES;
         region.notifyOnExit = YES;
         
         [_monitoredRegions addObject:region];
+        [_constraints addObject:constraint];
         
         // Start monitoring and ranging
         [_locationManager startMonitoringForRegion:region];
-        [_locationManager startRangingBeaconsInRegion:region];
+        [_locationManager startRangingBeaconsSatisfyingConstraint:constraint];
         
         NSLog(@"Started monitoring region: %@", [uuid UUIDString]);
     }
@@ -60,19 +65,26 @@
 - (void)stopScanning {
     NSLog(@"Stopping iBeacon scanning");
     
+    // Stop ranging for all constraints
+    for (CLBeaconIdentityConstraint *constraint in _constraints) {
+        [_locationManager stopRangingBeaconsSatisfyingConstraint:constraint];
+    }
+    
+    // Stop monitoring for all regions
     for (CLBeaconRegion *region in _monitoredRegions) {
-        [_locationManager stopRangingBeaconsInRegion:region];
         [_locationManager stopMonitoringForRegion:region];
     }
     
     [_monitoredRegions removeAllObjects];
+    [_constraints removeAllObjects];
 }
 
 // CLLocationManagerDelegate methods
 
+// Modern API for iOS 13+
 - (void)locationManager:(CLLocationManager *)manager
         didRangeBeacons:(NSArray<CLBeacon *> *)beacons
-               inRegion:(CLBeaconRegion *)region {
+    satisfyingConstraint:(CLBeaconIdentityConstraint *)constraint {
     
     if (beacons.count == 0) {
         return;
@@ -90,7 +102,7 @@
         QVariantMap beaconMap;
         
         // UUID as string
-        NSString *uuidString = [beacon.proximityUUID UUIDString];
+        NSString *uuidString = [beacon.UUID UUIDString];
         beaconMap["uuid"] = QString::fromNSString(uuidString);
         
         // Major and minor values
