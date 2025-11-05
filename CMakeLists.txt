@@ -22,8 +22,10 @@ if (IOS)
         ibeaconscanner.h
         ibeaconscanner_ios.mm
     )
-    # Enable Objective-C++ for iOS
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -x objective-c++")
+    # Enable Objective-C++ for .mm files only
+    set_source_files_properties(ibeaconscanner_ios.mm PROPERTIES
+        COMPILE_FLAGS "-x objective-c++"
+    )
 endif()
 
 qt_add_executable(appMeeBlueReader

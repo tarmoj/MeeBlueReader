@@ -115,6 +115,7 @@ int main(int argc, char *argv[])
     
 #ifdef Q_OS_IOS
     // Create and register IBeaconScanner instance for iOS
+    // Parent is set to &app, so Qt will automatically delete it on app destruction
     IBeaconScanner *ibeaconScanner = new IBeaconScanner(&app);
     engine.rootContext()->setContextProperty("ibeaconScanner", ibeaconScanner);
     

@@ -21,6 +21,10 @@ public:
     
     // Stop scanning for iBeacons
     void stopScanning();
+    
+    // Set beacon UUIDs to monitor (should be called before startScanning)
+    // Pass empty list to use default UUID
+    void setBeaconUUIDs(const QStringList &uuids);
 
 signals:
     void beaconListChanged();
