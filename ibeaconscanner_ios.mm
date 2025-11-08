@@ -15,6 +15,7 @@
 
 - (instancetype)initWithQtScanner:(IBeaconScanner *)scanner;
 - (void)setBeaconUUIDs:(const QStringList &)uuids;
+- (void)addBeaconUUID:(const QString &)uuid;
 
 @end
 
@@ -53,18 +54,53 @@
     NSLog(@"Beacon UUIDs updated: %@", _beaconUUIDs);
 }
 
+- (void)addBeaconUUID:(const QString &)uuid {
+    NSString *nsUuid = uuid.toNSString();
+    
+    // Check if UUID already exists
+    if ([_beaconUUIDs containsObject:nsUuid]) {
+        NSLog(@"UUID %@ already in monitoring list", nsUuid);
+        return;
+    }
+    
+    [_beaconUUIDs addObject:nsUuid];
+    NSLog(@"Added UUID to monitoring list: %@", nsUuid);
+    
+    // If already scanning, add this UUID to the ranging immediately
+    NSUUID *nsuuid = [[NSUUID alloc] initWithUUIDString:nsUuid];
+    if (!nsuuid) {
+        NSLog(@"Invalid UUID format: %@", nsUuid);
+        return;
+    }
+    
+    // Create constraint and region for this UUID
+    CLBeaconIdentityConstraint *constraint = [[CLBeaconIdentityConstraint alloc] initWithUUID:nsuuid];
+    CLBeaconRegion *region = [[CLBeaconRegion alloc] initWithBeaconIdentityConstraint:constraint
+                                                                            identifier:[nsuuid UUIDString]];
+    region.notifyEntryStateOnDisplay = YES;
+    region.notifyOnEntry = YES;
+    region.notifyOnExit = YES;
+    
+    [_monitoredRegions addObject:region];
+    [_constraints addObject:constraint];
+    
+    // Start monitoring and ranging for this new UUID
+    [_locationManager startMonitoringForRegion:region];
+    [_locationManager startRangingBeaconsSatisfyingConstraint:constraint];
+    
+    NSLog(@"Started monitoring dynamically added UUID: %@", [nsuuid UUIDString]);
+}
+
 - (void)startScanning {
     NSLog(@"Starting iBeacon scanning with CLLocationManager");
     
-    // Define the iBeacon regions to monitor
-    // Using common MeeBlue beacon UUIDs - adjust as needed
-    // df4f904b-fcb3-4dad-2454-4f06a4eb35cd
-    NSArray *beaconUUIDs = @[
-        [[NSUUID alloc] initWithUUIDString:@"D35B76E2-E01C-9FAC-BA8D-7CE20BDBA0C6"],
-        // Add more UUIDs as needed for different beacon types
-    ];
-    
-    for (NSUUID *uuid in beaconUUIDs) {
+    // Use configured beacon UUIDs
+    for (NSString *uuidString in _beaconUUIDs) {
+        NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:uuidString];
+        if (!uuid) {
+            NSLog(@"Invalid UUID: %@", uuidString);
+            continue;
+        }
         // Use modern API for iOS 13+
         CLBeaconIdentityConstraint *constraint = [[CLBeaconIdentityConstraint alloc] initWithUUID:uuid];
         CLBeaconRegion *region = [[CLBeaconRegion alloc] initWithBeaconIdentityConstraint:constraint
@@ -267,6 +303,16 @@ void IBeaconScanner::setBeaconUUIDs(const QStringList &uuids)
     if (m_nativeScanner) {
         IBeaconScannerDelegate *delegate = (__bridge IBeaconScannerDelegate *)m_nativeScanner;
         [delegate setBeaconUUIDs:uuids];
+    }
+}
+
+void IBeaconScanner::addBeaconUUID(const QString &uuid)
+{
+    qDebug() << "IBeaconScanner::addBeaconUUID() called with UUID:" << uuid;
+    
+    if (m_nativeScanner) {
+        IBeaconScannerDelegate *delegate = (__bridge IBeaconScannerDelegate *)m_nativeScanner;
+        [delegate addBeaconUUID:uuid];
     }
 }
 

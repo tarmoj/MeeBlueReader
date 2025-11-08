@@ -25,6 +25,9 @@ public:
     // Set beacon UUIDs to monitor (should be called before startScanning)
     // Pass empty list to use default UUID
     void setBeaconUUIDs(const QStringList &uuids);
+    
+    // Add a UUID to the monitoring list (can be called while scanning)
+    void addBeaconUUID(const QString &uuid);
 
 signals:
     void beaconListChanged();

@@ -38,6 +38,16 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
 MeeBlueReader::~MeeBlueReader()
 {
     stopScanning();
+    
+    // Clean up controllers
+    for (auto it = m_controllers.begin(); it != m_controllers.end(); ++it) {
+        QLowEnergyController *controller = it.value();
+        if (controller) {
+            controller->disconnectFromDevice();
+            controller->deleteLater();
+        }
+    }
+    m_controllers.clear();
 }
 
 QString MeeBlueReader::beaconInfo() const
@@ -91,39 +101,24 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
             m_rssiHistory[address] = QList<int>();
 
             QLowEnergyController *controller = QLowEnergyController::createCentral(device, this);
+            m_controllers[address] = controller;
 
-            // TODO: connect to the device and use services to read the beacons UUID and
-            // forward it to be added to the *beaconUUIDs of IBeaconScanner
-            // service to read the data is: Service 0x2000
-            // Characteristic 0x2001: Read/Write 20 Bytes The begin 20 bytes of 1st channel
-            // Characteristic 0x2002: Read/Write 12 Bytes The end 12 bytes of 1st channel
-            // first channel is sending iBeacon data
+            // Connect to device to read iBeacon UUID from GATT service
+            connect(controller, &QLowEnergyController::connected, this, [this, controller, address]() {
+                qDebug() << "Connected to MeeBlue device:" << address;
+                readBeaconUuidFromDevice(controller);
+            });
 
+            connect(controller, &QLowEnergyController::errorOccurred, this, 
+                [address](QLowEnergyController::Error error) {
+                qDebug() << "LE Controller error for" << address << ":" << error;
+            });
 
-            // connect(controller, &QLowEnergyController::connected, this, [controller, address]() {
-            //     QTimer *timer = new QTimer(controller);
-            //     timer->setInterval(1000); // 1 second
-
-            //     // Call readRssi() every timeout
-            //     QObject::connect(timer, &QTimer::timeout, controller, [controller, address]() {
-            //         controller->readRssi();
-            //         qDebug() << "Read RSSI " << address;
-            //     });
-
-            //     timer->start();
-
-            // });
-
-            // connect(controller, &QLowEnergyController::rssiRead, this, [this, address](qint16 rssi){
-            //     double distance = estimateDistance(rssi);
-            //     QMetaObject::invokeMethod(this, [=](){
-            //             emit newBeaconInfo(address, rssi, distance);
-            //         }, Qt::QueuedConnection);
-            // });
-
+            connect(controller, &QLowEnergyController::disconnected, this, [address]() {
+                qDebug() << "Disconnected from" << address;
+            });
 
             controller->connectToDevice();
-
         }
         
         QList<int> &history = m_rssiHistory[address];
@@ -251,4 +246,130 @@ bool MeeBlueReader::isTargetDevice(const QBluetoothDeviceInfo &device) const
     }
     
     return false;
+}
+
+void MeeBlueReader::readBeaconUuidFromDevice(QLowEnergyController *controller)
+{
+    if (!controller) {
+        qWarning() << "readBeaconUuidFromDevice: null controller";
+        return;
+    }
+
+    // Discover services
+    connect(controller, &QLowEnergyController::serviceDiscovered, this,
+        [](const QBluetoothUuid &serviceUuid) {
+            qDebug() << "Service discovered:" << serviceUuid.toString();
+        });
+
+    connect(controller, &QLowEnergyController::discoveryFinished, this,
+        [this, controller]() {
+            qDebug() << "Service discovery finished";
+            
+            // Look for service 0x2000
+            QBluetoothUuid targetServiceUuid(static_cast<quint16>(0x2000));
+            
+            if (!controller->services().contains(targetServiceUuid)) {
+                qWarning() << "Service 0x2000 not found";
+                controller->disconnectFromDevice();
+                return;
+            }
+            
+            QLowEnergyService *service = controller->createServiceObject(targetServiceUuid, this);
+            if (!service) {
+                qWarning() << "Failed to create service object for 0x2000";
+                controller->disconnectFromDevice();
+                return;
+            }
+            
+            // Discover characteristics
+            connect(service, &QLowEnergyService::stateChanged, this,
+                [this, service, controller](QLowEnergyService::ServiceState newState) {
+                    if (newState == QLowEnergyService::RemoteServiceDiscovered) {
+                        qDebug() << "Characteristics discovered for service 0x2000";
+                        
+                        // Look for characteristic 0x2001 (first 20 bytes of iBeacon data)
+                        QBluetoothUuid char0x2001Uuid(static_cast<quint16>(0x2001));
+                        
+                        QLowEnergyCharacteristic characteristic = service->characteristic(char0x2001Uuid);
+                        if (!characteristic.isValid()) {
+                            qWarning() << "Characteristic 0x2001 not found";
+                            service->deleteLater();
+                            controller->disconnectFromDevice();
+                            return;
+                        }
+                        
+                        // Read the characteristic
+                        connect(service, &QLowEnergyService::characteristicRead, this,
+                            [this, service, controller](const QLowEnergyCharacteristic &info, const QByteArray &value) {
+                                qDebug() << "Characteristic 0x2001 read, size:" << value.size();
+                                qDebug() << "Data:" << value.toHex(' ');
+                                
+                                // Extract UUID from the data
+                                QString uuid = extractUuidFromBeaconData(value);
+                                if (!uuid.isEmpty()) {
+                                    qDebug() << "Extracted iBeacon UUID:" << uuid;
+                                    emit beaconUuidDiscovered(uuid);
+                                } else {
+                                    qWarning() << "Failed to extract UUID from beacon data";
+                                }
+                                
+                                // Clean up
+                                service->deleteLater();
+                                controller->disconnectFromDevice();
+                            });
+                        
+                        service->readCharacteristic(characteristic);
+                    }
+                });
+            
+            service->discoverDetails();
+        });
+
+    controller->discoverServices();
+}
+
+QString MeeBlueReader::extractUuidFromBeaconData(const QByteArray &data) const
+{
+    // According to the spec:
+    // The first byte is the effective length
+    // iBeacon data format (30 bytes total):
+    // 0x{01 06 1A FF 4C 00 02 15 [16 bytes UUID] [2 bytes Major] [2 bytes Minor] [1 byte Power]}
+    // The UUID starts at byte 9 (after the header: 01 06 1A FF 4C 00 02 15)
+    
+    if (data.size() < 20) {
+        qWarning() << "Data too short for iBeacon format:" << data.size() << "bytes";
+        return QString();
+    }
+    
+    // Check if this looks like iBeacon data
+    // Expected header: 01 06 1A FF 4C 00 02 15
+    // But the first byte might be the length, so let's check from byte 1
+    if (data.size() >= 9 && 
+        static_cast<quint8>(data[1]) == 0x06 &&
+        static_cast<quint8>(data[2]) == 0x1A &&
+        static_cast<quint8>(data[3]) == 0xFF &&
+        static_cast<quint8>(data[4]) == 0x4C &&
+        static_cast<quint8>(data[5]) == 0x00 &&
+        static_cast<quint8>(data[6]) == 0x02 &&
+        static_cast<quint8>(data[7]) == 0x15) {
+        
+        // Extract 16 bytes of UUID starting at byte 8
+        if (data.size() >= 24) {
+            QByteArray uuidBytes = data.mid(8, 16);
+            
+            // Format as standard UUID string: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+            QString uuid = QString("%1-%2-%3-%4-%5")
+                .arg(QString::fromLatin1(uuidBytes.mid(0, 4).toHex()).toUpper())
+                .arg(QString::fromLatin1(uuidBytes.mid(4, 2).toHex()).toUpper())
+                .arg(QString::fromLatin1(uuidBytes.mid(6, 2).toHex()).toUpper())
+                .arg(QString::fromLatin1(uuidBytes.mid(8, 2).toHex()).toUpper())
+                .arg(QString::fromLatin1(uuidBytes.mid(10, 6).toHex()).toUpper());
+            
+            return uuid;
+        }
+    }
+    
+    qWarning() << "Data does not match iBeacon format";
+    qWarning() << "Data hex:" << data.toHex(' ');
+    return QString();
 }
