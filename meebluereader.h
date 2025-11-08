@@ -53,8 +53,6 @@ private:
     // Store last 4 RSSI readings per beacon address
     QMap<QString, QList<int>> m_rssiHistory;
     
-    // Store LE controllers for GATT operations
-    QMap<QString, QLowEnergyController*> m_controllers;
     
     // Distance calculation parameters
     static constexpr int TX_POWER = -53;  // Measured power at 1 meter
