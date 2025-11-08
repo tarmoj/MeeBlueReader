@@ -32,7 +32,7 @@
         
         // Default beacon UUID (common MeeBlue beacon UUID)
         _beaconUUIDs = [[NSMutableArray alloc] initWithArray:@[
-            @"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"
+            @"D35B76E2-E01C-9FAC-BA8D-7CE20BDBA0C6"
         ]];
         
         // Request authorization for location services
