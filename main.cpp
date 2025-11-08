@@ -110,8 +110,8 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     
     // Create and register MeeBlueReader instance
-    // MeeBlueReader reader;
-    // engine.rootContext()->setContextProperty("meeBlueReader", &reader);
+    MeeBlueReader reader;
+    engine.rootContext()->setContextProperty("meeBlueReader", &reader);
     
 #ifdef Q_OS_IOS
     // Create and register IBeaconScanner instance for iOS

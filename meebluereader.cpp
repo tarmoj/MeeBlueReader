@@ -86,32 +86,40 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
 #endif
 
 
-        
         // Store RSSI reading in history
         if (!m_rssiHistory.contains(address)) {
             m_rssiHistory[address] = QList<int>();
 
             QLowEnergyController *controller = QLowEnergyController::createCentral(device, this);
-            connect(controller, &QLowEnergyController::connected, this, [controller, address]() {
-                QTimer *timer = new QTimer(controller);
-                timer->setInterval(1000); // 1 second
 
-                // Call readRssi() every timeout
-                QObject::connect(timer, &QTimer::timeout, controller, [controller, address]() {
-                    controller->readRssi();
-                    qDebug() << "Read RSSI " << address;
-                });
+            // TODO: connect to the device and use services to read the beacons UUID and
+            // forward it to be added to the *beaconUUIDs of IBeaconScanner
+            // service to read the data is: Service 0x2000
+            // Characteristic 0x2001: Read/Write 20 Bytes The begin 20 bytes of 1st channel
+            // Characteristic 0x2002: Read/Write 12 Bytes The end 12 bytes of 1st channel
+            // first channel is sending iBeacon data
 
-                timer->start();
 
-            });
+            // connect(controller, &QLowEnergyController::connected, this, [controller, address]() {
+            //     QTimer *timer = new QTimer(controller);
+            //     timer->setInterval(1000); // 1 second
 
-            connect(controller, &QLowEnergyController::rssiRead, this, [this, address](qint16 rssi){
-                double distance = estimateDistance(rssi);
-                QMetaObject::invokeMethod(this, [=](){
-                        emit newBeaconInfo(address, rssi, distance);
-                    }, Qt::QueuedConnection);
-            });
+            //     // Call readRssi() every timeout
+            //     QObject::connect(timer, &QTimer::timeout, controller, [controller, address]() {
+            //         controller->readRssi();
+            //         qDebug() << "Read RSSI " << address;
+            //     });
+
+            //     timer->start();
+
+            // });
+
+            // connect(controller, &QLowEnergyController::rssiRead, this, [this, address](qint16 rssi){
+            //     double distance = estimateDistance(rssi);
+            //     QMetaObject::invokeMethod(this, [=](){
+            //             emit newBeaconInfo(address, rssi, distance);
+            //         }, Qt::QueuedConnection);
+            // });
 
 
             controller->connectToDevice();
