@@ -112,12 +112,12 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
                     // Raw data: "02 15 d3 5b 76 e2 e0 1c 9f ac ba 8d 7c e2 0b db a0 c6 90 f4 48 e8 cb"
 
                     qDebug() << "Manufacturer ID:" << QString("0x%1").arg(manufacturerId, 4, 16, QLatin1Char('0'));
-                    qDebug() << "Raw data:" << data.toHex(' ');
+                    qDebug() << "Raw data:" << data.toHex(' ') << " length: " << data.size();
 
                     // If it's an iBeacon (Apple's company ID 0x004C)
-                    if (manufacturerId == 0x004C && data.size() >= 25) {
+                    if (manufacturerId == 0x004C && data.size() >= 20) {
                         // Parse iBeacon payload
-                        QByteArray uuidBytes = data.mid(4, 16); // bytes 4–19
+                        QByteArray uuidBytes = data.mid(2, 16); // bytes 4–19
                         QString uuid;
                         uuid += QString(uuidBytes.mid(0,4).toHex()) + "-";
                         uuid += QString(uuidBytes.mid(4,2).toHex()) + "-";
@@ -126,9 +126,9 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
                         uuid += QString(uuidBytes.mid(10,6).toHex());
                         uuid = uuid.toLower();
 
-                        quint16 major = (quint8(data[20]) << 8) | quint8(data[21]);
-                        quint16 minor = (quint8(data[22]) << 8) | quint8(data[23]);
-                        qint8 txPower = qint8(data[24]);
+                        quint16 major = (quint8(data[20]) << 8) | quint8(data[20]);
+                        quint16 minor = (quint8(data[21]) << 8) | quint8(data[22]);
+                        qint8 txPower = qint8(data[22]);
 
                         qDebug() << "iBeacon UUID:" << uuid;
                         qDebug() << "Major:" << major << "Minor:" << minor << "TxPower:" << txPower;
@@ -140,26 +140,27 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
             
             m_rssiHistory[address] = QList<int>();
 
-            QLowEnergyController *controller = QLowEnergyController::createCentral(device, this);
-            m_controllers[address] = controller;
+            // QLowEnergyController *controller = QLowEnergyController::createCentral(device, this);
+            // m_controllers[address] = controller;
 
-            // Connect to device to read iBeacon UUID from GATT service
-            connect(controller, &QLowEnergyController::connected, this, [this, controller, address]() {
-                qDebug() << "Connected to MeeBlue device:" << address;
-                readBeaconUuidFromDevice(controller);
-            });
+            // // Connect to device to read iBeacon UUID from GATT service
+            // connect(controller, &QLowEnergyController::connected, this, [this, controller, address]() {
+            //     qDebug() << "Connected to MeeBlue device:" << address;
+            //     readBeaconUuidFromDevice(controller);
+            // });
 
-            connect(controller, &QLowEnergyController::errorOccurred, this, 
-                [address](QLowEnergyController::Error error) {
-                qDebug() << "LE Controller error for" << address << ":" << error;
-            });
+            // connect(controller, &QLowEnergyController::errorOccurred, this,
+            //     [address](QLowEnergyController::Error error) {
+            //     qDebug() << "LE Controller error for" << address << ":" << error;
+            // });
 
-            connect(controller, &QLowEnergyController::disconnected, this, [address]() {
-                qDebug() << "Disconnected from" << address;
-            });
+            // connect(controller, &QLowEnergyController::disconnected, this, [address]() {
+            //     qDebug() << "Disconnected from" << address;
+            // });
 
-            controller->connectToDevice();
+            // controller->connectToDevice();
         }
+
 /*
         QList<int> &history = m_rssiHistory[address];
         history.append(rssi);
