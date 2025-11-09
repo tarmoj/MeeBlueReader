@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
+#include <QLowEnergyController>
+#include <QLowEnergyService>
 #include <QTimer>
 #include <QStringList>
 #include <QMap>
@@ -27,6 +29,7 @@ public slots:
 signals:
     void beaconInfoChanged();
     void newBeaconInfo(QString address, int rssi, double distance);
+    void beaconUuidDiscovered(QString uuid);
 
 private slots:
     void deviceDiscovered(const QBluetoothDeviceInfo &device);
@@ -39,6 +42,8 @@ private:
     double estimateDistance(int rssi) const;
     bool isTargetDevice(const QBluetoothDeviceInfo &device) const;
     int calculateMedianRSSI(const QList<int> &readings) const;
+    void readBeaconUuidFromDevice(QLowEnergyController *controller);
+    QString extractUuidFromBeaconData(const QByteArray &data) const;
 
     QBluetoothDeviceDiscoveryAgent *m_discoveryAgent;
     QTimer *m_scanTimer;
@@ -47,6 +52,7 @@ private:
     
     // Store last 4 RSSI readings per beacon address
     QMap<QString, QList<int>> m_rssiHistory;
+    
     
     // Distance calculation parameters
     static constexpr int TX_POWER = -53;  // Measured power at 1 meter

@@ -101,4 +101,37 @@ Window {
             }
         }
     }
+    
+    // iOS iBeacon Scanner connection (only active on iOS)
+    Connections {
+        target: typeof ibeaconScanner !== 'undefined' ? ibeaconScanner : null
+        function onNewBeaconInfo(uuid, rssi, distance, major, minor) {
+            // Format the beacon identifier with UUID, major, and minor
+            var address = uuid + " (" + major + ":" + minor + ")";
+            
+            // Check if beacon already exists in the model
+            var found = false;
+            for (var i = 0; i < beaconModel.count; i++) {
+                if (beaconModel.get(i).address === address) {
+                    // Update existing beacon
+                    beaconModel.set(i, {
+                        "address": address,
+                        "rssi": rssi,
+                        "distance": distance.toFixed(2)
+                    });
+                    found = true;
+                    break;
+                }
+            }
+            
+            // Add new beacon if not found
+            if (!found) {
+                beaconModel.append({
+                    "address": address,
+                    "rssi": rssi,
+                    "distance": distance.toFixed(2)
+                });
+            }
+        }
+    }
 }

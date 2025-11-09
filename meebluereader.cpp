@@ -25,19 +25,12 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
             &MeeBlueReader::scanError);
     connect(m_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::finished,
             this, &MeeBlueReader::scanFinished);
-
-    // Configure the timer for 250ms interval
-    // m_scanTimer->setInterval(SCAN_INTERVAL_MS);
-    // connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::restartScan);
-    // connect(m_scanTimer, &QTimer::timeout, this, &MeeBlueReader::emitSmoothedReadings);
-
-    // Start scanning automatically
-    //startScanning();
 }
 
 MeeBlueReader::~MeeBlueReader()
 {
     stopScanning();
+    
 }
 
 QString MeeBlueReader::beaconInfo() const
@@ -84,40 +77,57 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
 #else
         address = device.address().toString();
 #endif
-
-
         
+        
+        
+
         // Store RSSI reading in history
         if (!m_rssiHistory.contains(address)) {
+            
+            // Manufacturer data is stored as a QHash<quint16, QByteArray>
+                const auto manufacturerData = device.manufacturerData();
+                for (auto it = manufacturerData.cbegin(); it != manufacturerData.cend(); ++it) {
+                    quint16 manufacturerId = it.key();
+                    QByteArray data = it.value();
+                    
+                    // returns:
+                    //Manufacturer ID: "0x004c"
+                    // Raw data: "02 15 d3 5b 76 e2 e0 1c 9f ac ba 8d 7c e2 0b db a0 c6 90 f4 48 e8 cb"
+
+                    qDebug() << "Manufacturer ID:" << QString("0x%1").arg(manufacturerId, 4, 16, QLatin1Char('0'));
+                    qDebug() << "Raw data:" << data.toHex(' ') << " length: " << data.size();
+
+                    // If it's an iBeacon (Apple's company ID 0x004C)
+                    if (manufacturerId == 0x004C && data.size() >= 20) {
+                        // Parse iBeacon payload
+                        QByteArray uuidBytes = data.mid(2, 16); // bytes 4–19
+                        QString uuid;
+                        uuid += QString(uuidBytes.mid(0,4).toHex()) + "-";
+                        uuid += QString(uuidBytes.mid(4,2).toHex()) + "-";
+                        uuid += QString(uuidBytes.mid(6,2).toHex()) + "-";
+                        uuid += QString(uuidBytes.mid(8,2).toHex()) + "-";
+                        uuid += QString(uuidBytes.mid(10,6).toHex());
+                        uuid = uuid.toLower();
+
+                        quint16 major = (quint8(data[20]) << 8) | quint8(data[20]);
+                        quint16 minor = (quint8(data[21]) << 8) | quint8(data[22]);
+                        qint8 txPower = qint8(data[22]);
+
+                        qDebug() << "iBeacon UUID:" << uuid;
+                        qDebug() << "Major:" << major << "Minor:" << minor << "TxPower:" << txPower;
+                        emit beaconUuidDiscovered(uuid);
+                    }
+                }
+
+            
+            
+            
             m_rssiHistory[address] = QList<int>();
 
-            QLowEnergyController *controller = QLowEnergyController::createCentral(device, this);
-            connect(controller, &QLowEnergyController::connected, this, [controller, address]() {
-                QTimer *timer = new QTimer(controller);
-                timer->setInterval(1000); // 1 second
-
-                // Call readRssi() every timeout
-                QObject::connect(timer, &QTimer::timeout, controller, [controller, address]() {
-                    controller->readRssi();
-                    qDebug() << "Read RSSI " << address;
-                });
-
-                timer->start();
-
-            });
-
-            connect(controller, &QLowEnergyController::rssiRead, this, [this, address](qint16 rssi){
-                double distance = estimateDistance(rssi);
-                QMetaObject::invokeMethod(this, [=](){
-                        emit newBeaconInfo(address, rssi, distance);
-                    }, Qt::QueuedConnection);
-            });
-
-
-            controller->connectToDevice();
 
         }
-        
+
+#if defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
         QList<int> &history = m_rssiHistory[address];
         history.append(rssi);
         
@@ -126,17 +136,15 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
             history.removeFirst();
         }
         
-        //emit newBeaconInfo(address, rssi, estimateDistance(rssi)); // temporary, no smoothing
-
         double distance = estimateDistance(rssi);
 
         // Always emit to QML on the main thread
         QMetaObject::invokeMethod(this, [=]() {
                 emit newBeaconInfo(address, rssi, distance);
-            }, Qt::QueuedConnection);
+        }, Qt::QueuedConnection);
 
-
-        qDebug() << "Beacon" << address << device.name() << "RSSI:" << rssi << "History size:" << history.size();
+#endif
+        qDebug() << "Device" << address << device.name() << "RSSI:" << rssi;
     }
 }
 
@@ -180,6 +188,7 @@ void MeeBlueReader::scanFinished()
     qDebug() << "Scan finished, waiting for next interval...";
 }
 
+// most likely not needed.
 void MeeBlueReader::restartScan()
 {
     // Stop current scan if still active
@@ -244,3 +253,4 @@ bool MeeBlueReader::isTargetDevice(const QBluetoothDeviceInfo &device) const
     
     return false;
 }
+
