@@ -120,8 +120,9 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("ibeaconScanner", ibeaconScanner);
     
     // Connect MeeBlueReader to IBeaconScanner to dynamically add discovered beacon UUIDs
-    QObject::connect(&reader, &MeeBlueReader::beaconUuidDiscovered,
-                     ibeaconScanner, &IBeaconScanner::addBeaconUUID);
+    // NB! temporary comment out, maybe necessary...
+    // QObject::connect(&reader, &MeeBlueReader::beaconUuidDiscovered,
+    //                  ibeaconScanner, &::IBeaconScanner::setBeaconUUIDs);
     
     // Start iBeacon scanning automatically on iOS
     ibeaconScanner->startScanning();

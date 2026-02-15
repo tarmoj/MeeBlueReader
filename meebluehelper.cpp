@@ -1,6 +1,7 @@
 #include "meebluehelper.h"
 #include <algorithm>
 #include <cmath>
+#include <QDebug>
 
 int MeeBlueHelper::calculateMedianRSSI(const QList<int> &readings)
 {
@@ -11,6 +12,7 @@ int MeeBlueHelper::calculateMedianRSSI(const QList<int> &readings)
     // Create a sorted copy of the readings
     QList<int> sortedReadings = readings;
     std::sort(sortedReadings.begin(), sortedReadings.end());
+    
     
     int size = sortedReadings.size();
     if (size % 2 == 0) {
@@ -32,8 +34,10 @@ double MeeBlueHelper::smoothReadings(const QList<double> &values)
     QList<double> sortedValues = values;
     std::sort(sortedValues.begin(), sortedValues.end());
     
+    qDebug() << "Readings: " << values << " sorted: " << sortedValues;
+    
     int size = sortedValues.size();
-    if (size % 2 == 0) {
+    if ( size % 2 == 0) {
         // Even number of values: average of two middle values
         return (sortedValues[size/2 - 1] + sortedValues[size/2]) / 2.0;
     } else {

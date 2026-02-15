@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #include "ibeaconscanner.h"
+#include "meebluehelper.h"
 #include <QDebug>
 #include <QMetaObject>
 #include <cmath>
@@ -12,6 +13,7 @@
 @property (nonatomic, strong) NSMutableArray<CLBeaconRegion *> *monitoredRegions;
 @property (nonatomic, strong) NSMutableArray<CLBeaconIdentityConstraint *> *constraints;
 @property (nonatomic, strong) NSMutableArray<NSString *> *beaconUUIDs;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<NSNumber *> *> *rssiHistory;
 
 - (instancetype)initWithQtScanner:(IBeaconScanner *)scanner;
 - (void)setBeaconUUIDs:(const QStringList &)uuids;
@@ -33,6 +35,9 @@
         _beaconUUIDs = [[NSMutableArray alloc] initWithArray:@[
             @"D35B76E2-E01C-9FAC-BA8D-7CE20BDBA0C6"
         ]];
+        
+        // Initialize RSSI history dictionary
+        _rssiHistory = [[NSMutableDictionary alloc] init];
         
         // Request authorization for location services
         if ([_locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)]) {
@@ -126,9 +131,39 @@
         beaconMap["major"] = [beacon.major intValue];
         beaconMap["minor"] = [beacon.minor intValue];
         
-        // RSSI value
+        // RSSI value with smoothing
         NSInteger rssi = beacon.rssi;
-        beaconMap["rssi"] = (int)rssi;
+        
+        // Create unique identifier for this beacon
+        NSString *beaconId = [NSString stringWithFormat:@"%@-%d-%d",
+                             uuidString, [beacon.major intValue], [beacon.minor intValue]];
+        
+        // Get or create RSSI history for this beacon
+        NSMutableArray<NSNumber *> *history = _rssiHistory[beaconId];
+        if (!history) {
+            history = [[NSMutableArray alloc] init];
+            _rssiHistory[beaconId] = history;
+        }
+        
+        // Add current RSSI to history
+        [history addObject:@(rssi)];
+        
+        // Keep only last 4 readings
+        const int MAX_HISTORY = 4;
+        if (history.count > MAX_HISTORY) {
+            [history removeObjectAtIndex:0];
+        }
+        
+        // Calculate smoothed RSSI using MeeBlueHelper
+        QList<double> rssiValues;
+        for (NSNumber *value in history) {
+            rssiValues.append([value doubleValue]);
+        }
+        
+        //double smoothedRSSI =   MeeBlueHelper::smoothReadings(rssiValues);
+        // for testing, report only  about the first beacon
+        double smoothedRSSI = beaconMap["minor"]==1 ?  MeeBlueHelper::smoothReadings(rssiValues) : rssi ;
+        beaconMap["rssi"] = (int)smoothedRSSI;
         
         // Accuracy (estimated distance in meters)
         double accuracy = beacon.accuracy;
@@ -199,20 +234,10 @@ didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
 }
 
 // Helper method to calculate distance from RSSI
-// Using log-distance path loss model
+// Using MeeBlueHelper for consistent distance calculation
 - (double)calculateDistanceFromRSSI:(NSInteger)rssi {
-    if (rssi == 0) {
-        return -1.0; // Invalid
-    }
-    
-    // Constants for distance calculation
-    const int TX_POWER = -59; // Measured power at 1 meter (typical for iBeacons)
-    const double N = 2.0;     // Environmental factor
-    
-    double ratio = (double)(TX_POWER - rssi) / (10.0 * N);
-    double distance = pow(10.0, ratio);
-    
-    return distance;
+    // Use MeeBlueHelper with iBeacon-typical TX power of -59 dBm
+    return MeeBlueHelper::estimateDistance((int)rssi, -59, 2.0);
 }
 
 @end
@@ -272,6 +297,17 @@ void IBeaconScanner::setBeaconUUIDs(const QStringList &uuids)
 
 void IBeaconScanner::updateBeacons(const QVariantList &beacons)
 {
+    // Measure time interval between calls
+    if (!m_updateTimer.isValid()) {
+        // First call - start the timer
+        m_updateTimer.start();
+        // qDebug() << "IBeaconScanner::updateBeacons() - First call, timer started";
+    } else {
+        // Subsequent calls - report elapsed time
+        qint64 elapsed = m_updateTimer.restart();
+        qDebug() << "IBeaconScanner::updateBeacons() - Time since last call:" << elapsed << "ms (" << (elapsed/1000.0) << "s)";
+    }
+    
     qDebug() << "IBeaconScanner::updateBeacons() called with" << beacons.size() << "beacons";
     
     // Update the internal beacon list
@@ -289,6 +325,8 @@ void IBeaconScanner::updateBeacons(const QVariantList &beacons)
         int minor = beaconMap["minor"].toInt();
         QString proximity = beaconMap["proximity"].toString();
         
-        emit newBeaconInfo(uuid, rssi, proximity, major, minor);
+        if (major==1 && minor==1) {
+            emit newBeaconInfo(uuid, rssi, proximity, major, minor);
+        }
     }
 }

@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QVariantList>
 #include <QVariantMap>
+#include <QElapsedTimer>
 
 class IBeaconScanner : public QObject
 {
@@ -37,6 +38,7 @@ public slots:
 private:
     QVariantList m_beaconList;
     void *m_nativeScanner; // Opaque pointer to Objective-C implementation
+    QElapsedTimer m_updateTimer; // Timer to measure call intervals
 };
 
 #endif // IBEACONSCANNER_H
