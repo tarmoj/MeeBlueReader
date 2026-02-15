@@ -4,6 +4,10 @@
 
 #include "meebluereader.h"
 
+#ifdef Q_OS_IOS
+#include "ibeaconscanner.h"
+#endif
+
 #ifdef Q_OS_ANDROID
 #include <QPermission>        // Qt6 permission API
 #include <QJniEnvironment>
@@ -109,6 +113,22 @@ int main(int argc, char *argv[])
     MeeBlueReader reader;
     engine.rootContext()->setContextProperty("meeBlueReader", &reader);
     
+#ifdef Q_OS_IOS
+    // Create and register IBeaconScanner instance for iOS
+    // Parent is set to &app, so Qt will automatically delete it on app destruction
+    IBeaconScanner *ibeaconScanner = new IBeaconScanner(&app);
+    engine.rootContext()->setContextProperty("ibeaconScanner", ibeaconScanner);
+    
+    // Connect MeeBlueReader to IBeaconScanner to dynamically add discovered beacon UUIDs
+    QObject::connect(&reader, &MeeBlueReader::beaconUuidDiscovered,
+                     ibeaconScanner, &IBeaconScanner::addBeaconUUID);
+    
+    // Start iBeacon scanning automatically on iOS
+    ibeaconScanner->startScanning();
+    
+    qDebug() << "iOS iBeacon scanner initialized and started";
+#endif
+
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -116,6 +136,7 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.loadFromModule("MeeBlueReader", "Main");
+
 
     return app.exec();
 }

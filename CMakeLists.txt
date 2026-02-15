@@ -9,10 +9,27 @@ find_package(Qt6 REQUIRED COMPONENTS Bluetooth Core Gui Quick)
 
 qt_standard_project_setup(REQUIRES 6.5)
 
-qt_add_executable(appMeeBlueReader
+# Define source files
+set(SOURCES
     main.cpp
     meebluereader.h
     meebluereader.cpp
+)
+
+# Add iOS-specific files
+if (IOS)
+    list(APPEND SOURCES
+        ibeaconscanner.h
+        ibeaconscanner_ios.mm
+    )
+    # Enable Objective-C++ for .mm files only
+    set_source_files_properties(ibeaconscanner_ios.mm PROPERTIES
+        COMPILE_FLAGS "-x objective-c++"
+    )
+endif()
+
+qt_add_executable(appMeeBlueReader
+    ${SOURCES}
 )
 
 qt_add_qml_module(appMeeBlueReader
@@ -45,9 +62,28 @@ include(GNUInstallDirs)
 
 if (APPLE)
 
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER "org.tarmoj.meeblue")
+    set(MACOSX_BUNDLE_BUNDLE_NAME "Meeblue Reader")
+
     set_target_properties(appMeeBlueReader PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Info.plist"
     )
+
+
+
+
+    # Link iOS-specific frameworks
+    if (IOS)
+        find_library(CORELOCATION_FRAMEWORK CoreLocation)
+        find_library(FOUNDATION_FRAMEWORK Foundation)
+        target_link_libraries(appMeeBlueReader PUBLIC
+            ${CORELOCATION_FRAMEWORK}
+            ${FOUNDATION_FRAMEWORK}
+        )
+
+
+
+    endif()
 
 endif()
 
