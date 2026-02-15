@@ -14,6 +14,8 @@ set(SOURCES
     main.cpp
     meebluereader.h
     meebluereader.cpp
+    meebluehelper.h
+    meebluehelper.cpp
 )
 
 # Add iOS-specific files

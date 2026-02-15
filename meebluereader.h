@@ -10,6 +10,7 @@
 #include <QStringList>
 #include <QMap>
 #include <QList>
+#include "meebluehelper.h"
 
 class MeeBlueReader : public QObject
 {
@@ -39,9 +40,7 @@ private slots:
     void emitSmoothedReadings();
 
 private:
-    double estimateDistance(int rssi) const;
     bool isTargetDevice(const QBluetoothDeviceInfo &device) const;
-    int calculateMedianRSSI(const QList<int> &readings) const;
     void readBeaconUuidFromDevice(QLowEnergyController *controller);
     QString extractUuidFromBeaconData(const QByteArray &data) const;
 
@@ -52,12 +51,6 @@ private:
     
     // Store last 4 RSSI readings per beacon address
     QMap<QString, QList<int>> m_rssiHistory;
-    
-    
-    // Distance calculation parameters
-    static constexpr int TX_POWER = -53;  // Measured power at 1 meter
-    static constexpr double N = 2.0;      // Environmental factor
-    static constexpr double INVALID_DISTANCE = -1.0;  // Invalid distance indicator
     
     // Timing parameters
     static constexpr int SCAN_INTERVAL_MS =  5000; //250;       // Scan interval in milliseconds

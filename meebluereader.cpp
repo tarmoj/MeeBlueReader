@@ -136,7 +136,7 @@ void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
             history.removeFirst();
         }
         
-        double distance = estimateDistance(rssi);
+        double distance = MeeBlueHelper::estimateDistance(rssi);
 
         // Always emit to QML on the main thread
         QMetaObject::invokeMethod(this, [=]() {
@@ -157,8 +157,8 @@ void MeeBlueReader::emitSmoothedReadings()
         
         if (!readings.isEmpty()) {
             // Calculate median RSSI
-            int smoothedRSSI = calculateMedianRSSI(readings);
-            double distance = estimateDistance(smoothedRSSI);
+            int smoothedRSSI = MeeBlueHelper::calculateMedianRSSI(readings);
+            double distance = MeeBlueHelper::estimateDistance(smoothedRSSI);
             
             QString info = QString("%1 | %2 dB | %3 m")
                             .arg(address)
@@ -201,40 +201,6 @@ void MeeBlueReader::restartScan()
     
     // Start a new scan
     m_discoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
-}
-
-double MeeBlueReader::estimateDistance(int rssi) const
-{
-    if (rssi == 0) {
-        return INVALID_DISTANCE;
-    }
-    
-    // Log-distance path loss model
-    // distance = 10 ^ ((txPower - rssi) / (10 * n))
-    double ratio = static_cast<double>(TX_POWER - rssi) / (10.0 * N);
-    double distance = std::pow(10.0, ratio);
-    
-    return distance;
-}
-
-int MeeBlueReader::calculateMedianRSSI(const QList<int> &readings) const
-{
-    if (readings.isEmpty()) {
-        return 0;
-    }
-    
-    // Create a sorted copy of the readings
-    QList<int> sortedReadings = readings;
-    std::sort(sortedReadings.begin(), sortedReadings.end());
-    
-    int size = sortedReadings.size();
-    if (size % 2 == 0) {
-        // Even number of readings: average of two middle values
-        return (sortedReadings[size/2 - 1] + sortedReadings[size/2]) / 2;
-    } else {
-        // Odd number of readings: middle value
-        return sortedReadings[size/2];
-    }
 }
 
 bool MeeBlueReader::isTargetDevice(const QBluetoothDeviceInfo &device) const
