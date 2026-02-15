@@ -9,8 +9,21 @@ int MeeBlueHelper::calculateMedianRSSI(const QList<int> &readings)
         return 0;
     }
     
-    // Create a sorted copy of the readings
-    QList<int> sortedReadings = readings;
+    // Filter out zero and invalid values (0 means out of range)
+    QList<int> validReadings;
+    for (int val : readings) {
+        if (val != 0) {
+            validReadings.append(val);
+        }
+    }
+    
+    // If no valid readings remain, return 0 (out of range)
+    if (validReadings.isEmpty()) {
+        return 0;
+    }
+    
+    // Create a sorted copy of the valid readings
+    QList<int> sortedReadings = validReadings;
     std::sort(sortedReadings.begin(), sortedReadings.end());
     
     
@@ -30,11 +43,24 @@ double MeeBlueHelper::smoothReadings(const QList<double> &values)
         return 0.0;
     }
     
-    // Create a sorted copy of the values
-    QList<double> sortedValues = values;
+    // Filter out zero and invalid values (0 means out of range)
+    QList<double> validValues;
+    for (double val : values) {
+        if (val != 0.0) {
+            validValues.append(val);
+        }
+    }
+    
+    // If no valid values remain, return 0 (out of range)
+    if (validValues.isEmpty()) {
+        return 0.0;
+    }
+    
+    // Create a sorted copy of the valid values
+    QList<double> sortedValues = validValues;
     std::sort(sortedValues.begin(), sortedValues.end());
     
-    qDebug() << "Readings: " << values << " sorted: " << sortedValues;
+    qDebug() << "Readings: " << values << " valid: " << validValues << " sorted: " << sortedValues;
     
     int size = sortedValues.size();
     if ( size % 2 == 0) {
