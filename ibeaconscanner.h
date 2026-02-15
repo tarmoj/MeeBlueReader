@@ -28,7 +28,7 @@ public:
 
 signals:
     void beaconListChanged();
-    void newBeaconInfo(QString uuid, int rssi, double distance, int major, int minor);
+    void newBeaconInfo(QString uuid, int rssi, QString proximity, int major, int minor);
 
 public slots:
     // Called by native Objective-C code to update beacon list

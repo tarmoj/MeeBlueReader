@@ -105,7 +105,7 @@ Window {
     // iOS iBeacon Scanner connection (only active on iOS)
     Connections {
         target: typeof ibeaconScanner !== 'undefined' ? ibeaconScanner : null
-        function onNewBeaconInfo(uuid, rssi, distance, major, minor) {
+        function onNewBeaconInfo(uuid, rssi, proximity, major, minor) {
             // Format the beacon identifier with UUID, major, and minor
             var address = uuid + " (" + major + ":" + minor + ")";
             
@@ -117,7 +117,7 @@ Window {
                     beaconModel.set(i, {
                         "address": address,
                         "rssi": rssi,
-                        "distance": distance.toFixed(2)
+                        "distance": proximity //distance.toFixed(2) // was distance
                     });
                     found = true;
                     break;
@@ -129,7 +129,7 @@ Window {
                 beaconModel.append({
                     "address": address,
                     "rssi": rssi,
-                    "distance": distance.toFixed(2)
+                    "distance": proximity //distance.toFixed(2)
                 });
             }
         }

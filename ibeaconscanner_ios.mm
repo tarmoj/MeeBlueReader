@@ -287,7 +287,8 @@ void IBeaconScanner::updateBeacons(const QVariantList &beacons)
         double distance = beaconMap["distance"].toDouble();
         int major = beaconMap["major"].toInt();
         int minor = beaconMap["minor"].toInt();
+        QString proximity = beaconMap["proximity"].toString();
         
-        emit newBeaconInfo(uuid, rssi, distance, major, minor);
+        emit newBeaconInfo(uuid, rssi, proximity, major, minor);
     }
 }
