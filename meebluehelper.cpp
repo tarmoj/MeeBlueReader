@@ -59,17 +59,19 @@ double MeeBlueHelper::smoothReadings(const QList<double> &values)
     // Create a sorted copy of the valid values
     QList<double> sortedValues = validValues;
     std::sort(sortedValues.begin(), sortedValues.end());
-    
-    qDebug() << "Readings: " << values << " valid: " << validValues << " sorted: " << sortedValues;
+    double result = 0.0;
     
     int size = sortedValues.size();
     if ( size % 2 == 0) {
         // Even number of values: average of two middle values
-        return (sortedValues[size/2 - 1] + sortedValues[size/2]) / 2.0;
+        result = (sortedValues[size/2 - 1] + sortedValues[size/2]) / 2.0;
     } else {
         // Odd number of values: middle value
-        return sortedValues[size/2];
-    }
+        result = sortedValues[size/2];
+    } 
+    
+    qDebug() << "Readings: " << values << " valid: " << validValues << " sorted: " << sortedValues << " result: " << result;
+    return result;
 }
 
 double MeeBlueHelper::estimateDistance(int rssi, int txPower, double n)
