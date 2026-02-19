@@ -4,7 +4,7 @@ Window {
     width: 640
     height: 480
     visible: true
-    title: qsTr("MeeBlue Reader 0.2.0")
+    title: qsTr("MeeBlue Reader double 0.2.0")
     
     Rectangle {
         anchors.fill: parent

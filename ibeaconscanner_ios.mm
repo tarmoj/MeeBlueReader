@@ -247,6 +247,8 @@ didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
 IBeaconScanner::IBeaconScanner(QObject *parent)
     : QObject(parent)
     , m_nativeScanner(nullptr)
+    , m_previousAverage(0.0)
+    , m_filterThreshold(0.25) // 10% threshold
 {
     // Create the Objective-C delegate
     IBeaconScannerDelegate *delegate = [[IBeaconScannerDelegate alloc] initWithQtScanner:this];
@@ -314,6 +316,9 @@ void IBeaconScanner::updateBeacons(const QVariantList &beacons)
     m_beaconList = beacons;
     emit beaconListChanged();
     
+    // Store current RSSI values by minor for averaging
+    m_currentRssiValues.clear();
+    
     // Emit individual beacon signals for each beacon
     for (const QVariant &beaconVariant : beacons) {
         QVariantMap beaconMap = beaconVariant.toMap();
@@ -325,8 +330,102 @@ void IBeaconScanner::updateBeacons(const QVariantList &beacons)
         int minor = beaconMap["minor"].toInt();
         QString proximity = beaconMap["proximity"].toString();
         
-        if (major==1 && minor==1) {
+        // Store RSSI value for this minor
+        m_currentRssiValues[minor] = rssi;
+        
+        if (minor==2 || minor==1) {
             emit newBeaconInfo(uuid, rssi, proximity, major, minor);
         }
     }
+    
+    // Test average RSSI calculation with minors 1 and 2
+    averageRssi(1, 2);
+}
+
+double IBeaconScanner::averageRssi(int minor1, int minor2)
+{
+    QList<int> validRssiValues;
+    
+    // Check if we have readings for both beacons
+    bool hasMinor1 = m_currentRssiValues.contains(minor1);
+    bool hasMinor2 = m_currentRssiValues.contains(minor2);
+    
+    if (!hasMinor1 && !hasMinor2) {
+        qDebug() << "averageRssi: No RSSI readings available for minors" << minor1 << "and" << minor2;
+        return 0.0;
+    }
+    
+    // Process minor1
+    if (hasMinor1) {
+        int rssi1 = m_currentRssiValues[minor1];
+        
+        // If we have a previous average, check if this reading is within threshold
+        if (m_previousAverage != 0.0) {
+            double deviation = qAbs(rssi1 - m_previousAverage) / qAbs(m_previousAverage);
+            if (deviation > m_filterThreshold) {
+                qDebug() << "averageRssi: Minor" << minor1 << "RSSI" << rssi1 
+                         << "rejected (deviation" << QString::number(deviation * 100, 'f', 1) 
+                         << "% exceeds" << QString::number(m_filterThreshold * 100, 'f', 1) << "% threshold)";
+            } else {
+                validRssiValues.append(rssi1);
+                qDebug() << "averageRssi: Minor" << minor1 << "RSSI" << rssi1 << "accepted";
+            }
+        } else {
+            // No previous average, accept all initial readings
+            validRssiValues.append(rssi1);
+            qDebug() << "averageRssi: Minor" << minor1 << "RSSI" << rssi1 << "accepted (initial)";
+        }
+    } else {
+        qDebug() << "averageRssi: No RSSI reading for minor" << minor1;
+    }
+    
+    // Process minor2
+    if (hasMinor2) {
+        int rssi2 = m_currentRssiValues[minor2];
+        
+        // If we have a previous average, check if this reading is within threshold
+        if (m_previousAverage != 0.0) {
+            double deviation = qAbs(rssi2 - m_previousAverage) / qAbs(m_previousAverage);
+            if (deviation > m_filterThreshold) {
+                qDebug() << "averageRssi: Minor" << minor2 << "RSSI" << rssi2 
+                         << "rejected (deviation" << QString::number(deviation * 100, 'f', 1) 
+                         << "% exceeds" << QString::number(m_filterThreshold * 100, 'f', 1) << "% threshold)";
+            } else {
+                validRssiValues.append(rssi2);
+                qDebug() << "averageRssi: Minor" << minor2 << "RSSI" << rssi2 << "accepted";
+            }
+        } else {
+            // No previous average, accept all initial readings
+            validRssiValues.append(rssi2);
+            qDebug() << "averageRssi: Minor" << minor2 << "RSSI" << rssi2 << "accepted (initial)";
+        }
+    } else {
+        qDebug() << "averageRssi: No RSSI reading for minor" << minor2;
+    }
+    
+    // Calculate average from valid readings
+    if (validRssiValues.isEmpty()) {
+        // Keep previous average if all readings were rejected
+        qDebug() << "averageRssi: All readings rejected, keeping previous average:" << m_previousAverage;
+        return m_previousAverage;
+    }
+    
+    double sum = 0.0;
+    for (int rssi : validRssiValues) {
+        sum += rssi;
+    }
+    
+    double newAverage = sum / validRssiValues.count();
+    
+    qDebug() << "========================================";
+    qDebug() << "averageRssi: Calculated average RSSI:" << newAverage 
+             << "(from" << validRssiValues.count() << "readings)";
+    qDebug() << "========================================";
+    
+    // Update previous average for next iteration
+    m_previousAverage = newAverage;
+
+    emit newBeaconInfo("average 1-1", newAverage, "unknown", 0, 1);
+    
+    return newAverage;
 }

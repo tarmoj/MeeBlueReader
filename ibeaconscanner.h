@@ -5,6 +5,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 #include <QElapsedTimer>
+#include <QMap>
 
 class IBeaconScanner : public QObject
 {
@@ -26,6 +27,10 @@ public:
     // Set beacon UUIDs to monitor (should be called before startScanning)
     // Pass empty list to use default UUID
     void setBeaconUUIDs(const QStringList &uuids);
+    
+    // Calculate average RSSI from two beacons identified by their minor values
+    // Filters out readings that differ more than threshold% from previous average
+    double averageRssi(int minor1, int minor2);
 
 signals:
     void beaconListChanged();
@@ -39,6 +44,11 @@ private:
     QVariantList m_beaconList;
     void *m_nativeScanner; // Opaque pointer to Objective-C implementation
     QElapsedTimer m_updateTimer; // Timer to measure call intervals
+    
+    // For averageRssi functionality
+    QMap<int, int> m_currentRssiValues; // Current RSSI values indexed by minor
+    double m_previousAverage; // Previous average RSSI value
+    double m_filterThreshold; // Filter threshold (0.10 = 10%)
 };
 
 #endif // IBEACONSCANNER_H
