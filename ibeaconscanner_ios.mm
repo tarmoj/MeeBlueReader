@@ -248,7 +248,7 @@ IBeaconScanner::IBeaconScanner(QObject *parent)
     : QObject(parent)
     , m_nativeScanner(nullptr)
     , m_previousAverage(0.0)
-    , m_filterThreshold(0.25) // 10% threshold
+    , m_filterThreshold(5.0) // ±5 dB threshold
 {
     // Create the Objective-C delegate
     IBeaconScannerDelegate *delegate = [[IBeaconScannerDelegate alloc] initWithQtScanner:this];
@@ -345,6 +345,7 @@ void IBeaconScanner::updateBeacons(const QVariantList &beacons)
 double IBeaconScanner::averageRssi(int minor1, int minor2)
 {
     QList<int> validRssiValues;
+    QList<int> rejectedRssiValues;
     
     // Check if we have readings for both beacons
     bool hasMinor1 = m_currentRssiValues.contains(minor1);
@@ -361,11 +362,12 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
         
         // If we have a previous average, check if this reading is within threshold
         if (m_previousAverage != 0.0) {
-            double deviation = qAbs(rssi1 - m_previousAverage) / qAbs(m_previousAverage);
-            if (deviation > m_filterThreshold) {
+            double difference = qAbs(rssi1 - m_previousAverage);
+            if (difference > m_filterThreshold) {
+                rejectedRssiValues.append(rssi1);
                 qDebug() << "averageRssi: Minor" << minor1 << "RSSI" << rssi1 
-                         << "rejected (deviation" << QString::number(deviation * 100, 'f', 1) 
-                         << "% exceeds" << QString::number(m_filterThreshold * 100, 'f', 1) << "% threshold)";
+                         << "rejected (difference" << QString::number(difference, 'f', 1) 
+                         << "dB exceeds ±" << QString::number(m_filterThreshold, 'f', 1) << "dB threshold)";
             } else {
                 validRssiValues.append(rssi1);
                 qDebug() << "averageRssi: Minor" << minor1 << "RSSI" << rssi1 << "accepted";
@@ -385,11 +387,12 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
         
         // If we have a previous average, check if this reading is within threshold
         if (m_previousAverage != 0.0) {
-            double deviation = qAbs(rssi2 - m_previousAverage) / qAbs(m_previousAverage);
-            if (deviation > m_filterThreshold) {
+            double difference = qAbs(rssi2 - m_previousAverage);
+            if (difference > m_filterThreshold) {
+                rejectedRssiValues.append(rssi2);
                 qDebug() << "averageRssi: Minor" << minor2 << "RSSI" << rssi2 
-                         << "rejected (deviation" << QString::number(deviation * 100, 'f', 1) 
-                         << "% exceeds" << QString::number(m_filterThreshold * 100, 'f', 1) << "% threshold)";
+                         << "rejected (difference" << QString::number(difference, 'f', 1) 
+                         << "dB exceeds ±" << QString::number(m_filterThreshold, 'f', 1) << "dB threshold)";
             } else {
                 validRssiValues.append(rssi2);
                 qDebug() << "averageRssi: Minor" << minor2 << "RSSI" << rssi2 << "accepted";
@@ -401,6 +404,18 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
         }
     } else {
         qDebug() << "averageRssi: No RSSI reading for minor" << minor2;
+    }
+    
+    // Special rule: if both readings were rejected but are close to each other, accept their average
+    if (validRssiValues.isEmpty() && rejectedRssiValues.count() == 2) {
+        double differenceBetweenReadings = qAbs(rejectedRssiValues[0] - rejectedRssiValues[1]);
+        if (differenceBetweenReadings <= m_filterThreshold) {
+            qDebug() << "averageRssi: Both readings rejected from previous average, but within" 
+                     << QString::number(m_filterThreshold, 'f', 1) << "dB of each other (" 
+                     << QString::number(differenceBetweenReadings, 'f', 1) << "dB) - accepting their average";
+            validRssiValues = rejectedRssiValues;
+            rejectedRssiValues.clear();
+        }
     }
     
     // Calculate average from valid readings
@@ -425,7 +440,7 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
     // Update previous average for next iteration
     m_previousAverage = newAverage;
 
-    emit newBeaconInfo("average 1-1", newAverage, "unknown", 0, 1);
+    emit newBeaconInfo("average 1-2", newAverage, "unknown", 0, 1);
     
     return newAverage;
 }
