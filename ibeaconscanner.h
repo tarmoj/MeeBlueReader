@@ -47,6 +47,7 @@ private:
     
     // For averageRssi functionality
     QMap<int, int> m_currentRssiValues; // Current RSSI values indexed by minor
+    QMap<int, QString> m_currentProximityValues; // Current proximity values indexed by minor
     double m_previousAverage; // Previous average RSSI value
     double m_filterThreshold; // Filter threshold (0.10 = 10%)
 };

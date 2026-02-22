@@ -299,16 +299,7 @@ void IBeaconScanner::setBeaconUUIDs(const QStringList &uuids)
 
 void IBeaconScanner::updateBeacons(const QVariantList &beacons)
 {
-    // Measure time interval between calls
-    if (!m_updateTimer.isValid()) {
-        // First call - start the timer
-        m_updateTimer.start();
-        // qDebug() << "IBeaconScanner::updateBeacons() - First call, timer started";
-    } else {
-        // Subsequent calls - report elapsed time
-        qint64 elapsed = m_updateTimer.restart();
-        qDebug() << "IBeaconScanner::updateBeacons() - Time since last call:" << elapsed << "ms (" << (elapsed/1000.0) << "s)";
-    }
+
     
     qDebug() << "IBeaconScanner::updateBeacons() called with" << beacons.size() << "beacons";
     
@@ -330,8 +321,9 @@ void IBeaconScanner::updateBeacons(const QVariantList &beacons)
         int minor = beaconMap["minor"].toInt();
         QString proximity = beaconMap["proximity"].toString();
         
-        // Store RSSI value for this minor
+        // Store RSSI and proximity values for this minor
         m_currentRssiValues[minor] = rssi;
+        m_currentProximityValues[minor] = proximity;
         
         if (minor==2 || minor==1) {
             emit newBeaconInfo(uuid, rssi, proximity, major, minor);
@@ -340,12 +332,15 @@ void IBeaconScanner::updateBeacons(const QVariantList &beacons)
     
     // Test average RSSI calculation with minors 1 and 2
     averageRssi(1, 2);
+    averageRssi(3, 4);
+    averageRssi(5, 6);
 }
 
 double IBeaconScanner::averageRssi(int minor1, int minor2)
 {
     QList<int> validRssiValues;
     QList<int> rejectedRssiValues;
+    QList<int> validProximityValues;
     
     // Check if we have readings for both beacons
     bool hasMinor1 = m_currentRssiValues.contains(minor1);
@@ -359,6 +354,19 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
     // Process minor1
     if (hasMinor1) {
         int rssi1 = m_currentRssiValues[minor1];
+        QString proximity1Str = m_currentProximityValues.value(minor1, "Unknown");
+        
+        // Convert proximity to numeric value
+        int proximityValue1 = 0; // Default to unknown
+        if (proximity1Str == "Immediate") {
+            proximityValue1 = 1;
+        } else if (proximity1Str == "Near") {
+            proximityValue1 = 2;
+        } else if (proximity1Str == "Far") {
+            proximityValue1 = 3;
+        } else {
+            proximityValue1 = 0; // Unknown
+        }
         
         // If we have a previous average, check if this reading is within threshold
         if (m_previousAverage != 0.0) {
@@ -370,11 +378,13 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
                          << "dB exceeds ±" << QString::number(m_filterThreshold, 'f', 1) << "dB threshold)";
             } else {
                 validRssiValues.append(rssi1);
+                validProximityValues.append(proximityValue1);
                 qDebug() << "averageRssi: Minor" << minor1 << "RSSI" << rssi1 << "accepted";
             }
         } else {
             // No previous average, accept all initial readings
             validRssiValues.append(rssi1);
+            validProximityValues.append(proximityValue1);
             qDebug() << "averageRssi: Minor" << minor1 << "RSSI" << rssi1 << "accepted (initial)";
         }
     } else {
@@ -384,6 +394,19 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
     // Process minor2
     if (hasMinor2) {
         int rssi2 = m_currentRssiValues[minor2];
+        QString proximity2Str = m_currentProximityValues.value(minor2, "Unknown");
+        
+        // Convert proximity to numeric value
+        int proximityValue2 = 0; // Default to unknown
+        if (proximity2Str == "Immediate") {
+            proximityValue2 = 1;
+        } else if (proximity2Str == "Near") {
+            proximityValue2 = 2;
+        } else if (proximity2Str == "Far") {
+            proximityValue2 = 3;
+        } else {
+            proximityValue2 = 0; // Unknown
+        }
         
         // If we have a previous average, check if this reading is within threshold
         if (m_previousAverage != 0.0) {
@@ -395,11 +418,13 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
                          << "dB exceeds ±" << QString::number(m_filterThreshold, 'f', 1) << "dB threshold)";
             } else {
                 validRssiValues.append(rssi2);
+                validProximityValues.append(proximityValue2);
                 qDebug() << "averageRssi: Minor" << minor2 << "RSSI" << rssi2 << "accepted";
             }
         } else {
             // No previous average, accept all initial readings
             validRssiValues.append(rssi2);
+            validProximityValues.append(proximityValue2);
             qDebug() << "averageRssi: Minor" << minor2 << "RSSI" << rssi2 << "accepted (initial)";
         }
     } else {
@@ -432,15 +457,55 @@ double IBeaconScanner::averageRssi(int minor1, int minor2)
     
     double newAverage = sum / validRssiValues.count();
     
+    // Calculate average proximity (take floor = closer proximity)
+    int averageProximityValue = 0;
+    if (!validProximityValues.isEmpty()) {
+        // Take the minimum (closest) proximity value
+        int minProximity = validProximityValues[0];
+        for (int pv : validProximityValues) {
+            if (pv > 0) { // Ignore Unknown (0) values when finding minimum
+                if (minProximity == 0 || pv < minProximity) {
+                    minProximity = pv;
+                }
+            }
+        }
+        
+        // If all values were Unknown (0), check if we have at least one valid value
+        if (minProximity > 0) {
+            averageProximityValue = minProximity;
+        } else {
+            // All values are 0 (Unknown), so report Unknown
+            averageProximityValue = 0;
+        }
+    }
+    
+    // Convert proximity value back to string
+    QString proximityStr;
+    switch (averageProximityValue) {
+        case 1:
+            proximityStr = "Immediate";
+            break;
+        case 2:
+            proximityStr = "Near";
+            break;
+        case 3:
+            proximityStr = "Far";
+            break;
+        default:
+            proximityStr = "Unknown";
+            break;
+    }
+    
     qDebug() << "========================================";
     qDebug() << "averageRssi: Calculated average RSSI:" << newAverage 
              << "(from" << validRssiValues.count() << "readings)";
+    qDebug() << "averageRssi: Calculated proximity:" << proximityStr;
     qDebug() << "========================================";
     
     // Update previous average for next iteration
     m_previousAverage = newAverage;
 
-    emit newBeaconInfo("average 1-2", newAverage, "unknown", 0, 1);
+    emit newBeaconInfo(QString("average %1-%2").arg(minor1).arg(minor2), newAverage, proximityStr, 0, minor1+minor2);
     
     return newAverage;
 }
