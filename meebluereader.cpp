@@ -12,10 +12,10 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
     // Create stations - example configuration
     // Station(id, major1, minor1, major2, minor2)
     // These should be configured based on actual beacon deployment
-    m_stations.append(new Station(1, 0, 1, 0, 2, this));
+    m_stations.append(new Station(1, 1, 1, 1, 2, this));
     // Add more stations as needed
-    // m_stations.append(new Station(2, 0, 3, 0, 4, this));
-    // m_stations.append(new Station(3, 0, 5, 0, 6, this));
+    m_stations.append(new Station(2, 1, 3, 1, 4, this));
+    m_stations.append(new Station(3, 1, 5, 1, 6, this));
     
     // Connect station signals to our signal
     for (Station *station : m_stations) {

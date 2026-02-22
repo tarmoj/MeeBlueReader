@@ -3,6 +3,8 @@
 #include "ibeaconscanner.h"
 #include <QDebug>
 #include <QMetaObject>
+#include <QVariant>
+#include <QVariantMap>
 
 // Objective-C delegate class for CLLocationManager
 @interface IBeaconScannerDelegate : NSObject <CLLocationManagerDelegate>
