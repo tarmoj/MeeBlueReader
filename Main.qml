@@ -16,7 +16,7 @@ Window {
             spacing: 20
             
             Text {
-                text: "MeeBlue Beacon Reader double 0.2.2"
+                text: "MeeBlue Beacon Reader 0.3.0"
                 font.pixelSize: 24
                 font.bold: true
                 anchors.horizontalCenter: parent.horizontalCenter

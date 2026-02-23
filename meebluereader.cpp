@@ -8,7 +8,12 @@
 
 MeeBlueReader::MeeBlueReader(QObject *parent)
     : QObject(parent)
+    , m_scanner(new IBeaconScanner(this))
 {
+    // Connect scanner -> update() so beacon data flows in automatically
+    connect(m_scanner, &IBeaconScanner::beaconDataUpdated,
+            this,      &MeeBlueReader::update);
+
     // Create stations - example configuration
     // Station(id, major1, minor1, major2, minor2)
     // These should be configured based on actual beacon deployment
@@ -21,14 +26,30 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
     for (Station *station : m_stations) {
         connect(station, &Station::stationUpdated, this, &MeeBlueReader::newStationInfo);
     }
-    
+
+    // Start scanning immediately
+    m_scanner->startScanning();
+
     qDebug() << "MeeBlueReader created with" << m_stations.size() << "stations";
 }
 
 MeeBlueReader::~MeeBlueReader()
 {
+    m_scanner->stopScanning();
     qDeleteAll(m_stations);
     m_stations.clear();
+}
+
+void MeeBlueReader::startScanning()
+{
+    qDebug() << "MeeBlueReader::startScanning()";
+    m_scanner->startScanning();
+}
+
+void MeeBlueReader::stopScanning()
+{
+    qDebug() << "MeeBlueReader::stopScanning()";
+    m_scanner->stopScanning();
 }
 
 void MeeBlueReader::update(const QList<BeaconInfo> &beacons)

@@ -22,11 +22,18 @@ public slots:
     // Called by IBeaconScanner when new beacon data arrives
     void update(const QList<BeaconInfo> &beacons);
 
+    // Start / stop the underlying BLE scanner
+    void startScanning();
+    void stopScanning();
+
 signals:
     // Emitted when station info is updated (id, rssi, proximity, major1:minor1, major2:minor2)
     void newStationInfo(int stationId, int rssi, QString proximity, QString beaconIds);
 
 private:
+    // BLE scanner (platform-specific implementation behind common interface)
+    IBeaconScanner *m_scanner;
+
     // List of all beacon information received from scanner
     QList<BeaconInfo> m_beaconInfo;
     
