@@ -90,7 +90,7 @@ ApplicationWindow {
 
             MenuItem {
                 text: qsTr("Info")
-                icon.source: "qrc:/images/info.svg"
+                icon.source: "qrc:/images/menu.svg"
                 onTriggered: {
                     drawer.close()
                     helpDialog.open()

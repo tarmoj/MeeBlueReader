@@ -54,9 +54,16 @@ Item {
             Label {
                 id: statusLabel
 
-                text: "Status"
+                text: qsTr("Status messages come here.")
             }
         }
+
+
+
+        Label {
+            text: qsTr("Stations:")
+        }
+
 
         GridLayout {
             id: stationsArea
@@ -71,7 +78,7 @@ Item {
                 id: stationRepeater
                 model: stationModel
 
-                StationView {
+                StationInfo {
                     stationNumber: model.stationId
                     rssi: model.rssi
                     proximity: model.proximity
@@ -93,62 +100,6 @@ Item {
 
     }
 
-    /* original:
-    Column {
-        anchors.fill: parent
-        anchors.margins: 20
-        spacing: 20
-
-        Rectangle {
-            width: parent.width
-            height: parent.height - 100
-            color: "white"
-            border.color: "#cccccc"
-            border.width: 2
-            radius: 5
-
-            ListView {
-                id: beaconListView
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 5
-                clip: true
-
-                model: ListModel {
-                    id: beaconModel
-                }
-
-                delegate: Rectangle {
-                    width: beaconListView.width
-                    height: 40
-                    color: index % 2 === 0 ? "#f9f9f9" : "#ffffff"
-                    radius: 3
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: model.address + " | " + model.rssi + " dB | " + model.distance + " m"
-                        font.pointSize: 10
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Waiting for beacons..."
-                    font.pixelSize: 16
-                    color: "#999999"
-                    visible: beaconListView.count === 0
-                }
-            }
-        }
-
-        Text {
-            text: "Scanning for beacons... (" + beaconListView.count + " found)"
-            font.pixelSize: 14
-            color: "#666666"
-            anchors.horizontalCenter: parent.horizontalCenter
-        }
-    }
-    */
 }
 
 
