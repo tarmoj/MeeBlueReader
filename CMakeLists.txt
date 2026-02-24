@@ -42,6 +42,16 @@ qt_add_qml_module(appMeeBlueReader
         Main.qml
         RESOURCES android/AndroidManifest.xml android/build.gradle android/res/values/libs.xml android/res/xml/qtprovider_paths.xml android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.properties android/gradle.properties android/gradlew android/gradlew.bat
         RESOURCES refactoring-notes.md
+        QML_FILES MainView.qml
+        QML_FILES SettingsView.qml
+    RESOURCES
+        resources.qrc
+        qtquickcontrols2.conf
+)
+
+qt_add_resources(appMeeBlueReader "conf"
+    PREFIX "/"
+    FILES qtquickcontrols2.conf
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

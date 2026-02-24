@@ -1,5 +1,8 @@
 build/*
 
+
+image-material/*
+
 CMakeLists.txt.user
 
 # CodeQL generated files
