@@ -2,60 +2,85 @@
 #define MEEBLUEREADER_H
 
 #include <QObject>
-#include <QBluetoothDeviceDiscoveryAgent>
-#include <QBluetoothDeviceInfo>
-#include <QLowEnergyController>
-#include <QLowEnergyService>
-#include <QTimer>
-#include <QStringList>
-#include <QMap>
 #include <QList>
-#include "meebluehelper.h"
+#include <QMap>
+#include <algorithm>
+#include "ibeaconscanner.h"
+
+// Forward declaration
+class Station;
 
 class MeeBlueReader : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QString beaconInfo READ beaconInfo NOTIFY beaconInfoChanged)
 
 public:
     explicit MeeBlueReader(QObject *parent = nullptr);
     ~MeeBlueReader();
 
-    QString beaconInfo() const;
-
 public slots:
+    // Called by IBeaconScanner when new beacon data arrives
+    void update(const QList<BeaconInfo> &beacons);
+
+    // Start / stop the underlying BLE scanner
     void startScanning();
     void stopScanning();
 
 signals:
-    void beaconInfoChanged();
-    void newBeaconInfo(QString address, int rssi, double distance);
-    void beaconUuidDiscovered(QString uuid);
-
-private slots:
-    void deviceDiscovered(const QBluetoothDeviceInfo &device);
-    void scanError(QBluetoothDeviceDiscoveryAgent::Error error);
-    void scanFinished();
-    void restartScan();
-    void emitSmoothedReadings();
+    // Emitted when station info is updated (id, rssi, proximity, major1:minor1, major2:minor2)
+    void newStationInfo(int stationId, int rssi, QString proximity, QString beaconIds);
 
 private:
-    bool isTargetDevice(const QBluetoothDeviceInfo &device) const;
-    void readBeaconUuidFromDevice(QLowEnergyController *controller);
-    QString extractUuidFromBeaconData(const QByteArray &data) const;
+    // BLE scanner (platform-specific implementation behind common interface)
+    IBeaconScanner *m_scanner;
 
-    QBluetoothDeviceDiscoveryAgent *m_discoveryAgent;
-    QTimer *m_scanTimer;
-    QStringList m_deviceList;
-    QString m_beaconInfo;
+    // List of all beacon information received from scanner
+    QList<BeaconInfo> m_beaconInfo;
     
-    // Store last 4 RSSI readings per beacon address
-    QMap<QString, QList<int>> m_rssiHistory;
+    // List of stations (each station tracks 2 beacons)
+    QList<Station*> m_stations;
+};
+
+// Station class - represents a pair of beacons for reliability
+class Station : public QObject
+{
+    Q_OBJECT
     
-    // Timing parameters
-    static constexpr int SCAN_INTERVAL_MS =  5000; //250;       // Scan interval in milliseconds
-    static constexpr int DISCOVERY_TIMEOUT_MS = 25000;  // Discovery timeout in milliseconds
-    static constexpr int MAX_RSSI_HISTORY = 4;         // Number of readings for median calculation
+public:
+    Station(int id, int major1, int minor1, int major2, int minor2, MeeBlueReader *parent);
+    
+    // Update station with current beacon data
+    void update(const QList<BeaconInfo> &beacons);
+    
+    int id() const { return m_id; }
+    
+signals:
+    // Emitted when station data is processed
+    void stationUpdated(int stationId, int rssi, QString proximity, QString beaconIds);
+    
+private:
+    // Smooth RSSI readings using median filter
+    static int smoothReadings(const QList<int> &values);
+    
+    // Convert Proximity enum to string
+    static QString proximityToString(Proximity prox);
+    
+    // Convert proximity enum to numeric value for comparison
+    static int proximityToInt(Proximity prox);
+    
+    // Convert numeric proximity back to enum
+    static Proximity intToProximity(int val);
+    
+    int m_id;
+    int m_major1, m_minor1;
+    int m_major2, m_minor2;
+    
+    // RSSI history for smoothing (last 4 readings per beacon)
+    QMap<int, QList<int>> m_rssiHistory; // Key: minor value
+    
+    // Previous average for filtering
+    double m_previousAverage;
+    double m_filterThreshold; // ±5 dB threshold
 };
 
 #endif // MEEBLUEREADER_H

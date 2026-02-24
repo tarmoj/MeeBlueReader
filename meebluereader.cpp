@@ -1,222 +1,285 @@
 #include "meebluereader.h"
 #include <QDebug>
 #include <algorithm>
-#include <QLowEnergyController>
+
+// ============================================================================
+// MeeBlueReader Implementation
+// ============================================================================
 
 MeeBlueReader::MeeBlueReader(QObject *parent)
     : QObject(parent)
-    , m_discoveryAgent(new QBluetoothDeviceDiscoveryAgent(this))
-    , m_scanTimer(new QTimer(this))
-    , m_beaconInfo("Waiting for beacons...")
+    , m_scanner(new IBeaconScanner(this))
 {
-    // Add the specified device addresses to the device list
-    m_deviceList << "DD:2B:7C:C0:A0:84" << "EB:3B:E8:48:F4:90";
+    // Connect scanner -> update() so beacon data flows in automatically
+    connect(m_scanner, &IBeaconScanner::beaconDataUpdated,
+            this,      &MeeBlueReader::update);
 
-    // Configure the discovery agent
-    m_discoveryAgent->setLowEnergyDiscoveryTimeout(0);
-    m_discoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
+    // Create stations - example configuration
+    // Station(id, major1, minor1, major2, minor2)
+    // These should be configured based on actual beacon deployment
+    m_stations.append(new Station(1, 1, 1, 1, 2, this));
+    // Add more stations as needed
+    m_stations.append(new Station(2, 1, 3, 1, 4, this));
+    m_stations.append(new Station(3, 1, 5, 1, 6, this));
+    
+    // Connect station signals to our signal
+    for (Station *station : m_stations) {
+        connect(station, &Station::stationUpdated, this, &MeeBlueReader::newStationInfo);
+    }
 
-    // Connect signals
-    connect(m_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,
-            this, &MeeBlueReader::deviceDiscovered);
-    connect(m_discoveryAgent,
-            &QBluetoothDeviceDiscoveryAgent::errorOccurred,
-            this,
-            &MeeBlueReader::scanError);
-    connect(m_discoveryAgent, &QBluetoothDeviceDiscoveryAgent::finished,
-            this, &MeeBlueReader::scanFinished);
+    // Start scanning immediately
+    m_scanner->startScanning();
+
+    qDebug() << "MeeBlueReader created with" << m_stations.size() << "stations";
 }
 
 MeeBlueReader::~MeeBlueReader()
 {
-    stopScanning();
-    
-}
-
-QString MeeBlueReader::beaconInfo() const
-{
-    return m_beaconInfo;
+    m_scanner->stopScanning();
+    qDeleteAll(m_stations);
+    m_stations.clear();
 }
 
 void MeeBlueReader::startScanning()
 {
-    qDebug() << "Starting MeeBlue beacon scanning...";
-    m_discoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
-    // m_scanTimer->start();
+    qDebug() << "MeeBlueReader::startScanning()";
+    m_scanner->startScanning();
 }
 
 void MeeBlueReader::stopScanning()
 {
-    qDebug() << "Stopping MeeBlue beacon scanning...";
-    //m_scanTimer->stop();
-    if (m_discoveryAgent->isActive()) {
-        m_discoveryAgent->stop();
-    }
+    qDebug() << "MeeBlueReader::stopScanning()";
+    m_scanner->stopScanning();
 }
 
-void MeeBlueReader::deviceDiscovered(const QBluetoothDeviceInfo &device)
+void MeeBlueReader::update(const QList<BeaconInfo> &beacons)
 {
-    if (!device.isValid()) return;
-
-    //test
-    // const QString addr = device.address().toString();
-    // const qint16 rssi = device.rssi();
-
-    // // Every new advertisement will trigger this again with updated RSSI
-    // qDebug() << "Beacon" << addr << "RSSI" << rssi;
-    // qDebug() << device.name();
-
-    if (isTargetDevice(device)) {
-        int rssi = device.rssi();
-
-        QString address;
-
-
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-        address = device.deviceUuid().toString(); // not really address, but should maybe work
-#else
-        address = device.address().toString();
-#endif
-        
-        
-        
-
-        // Store RSSI reading in history
-        if (!m_rssiHistory.contains(address)) {
-            
-            // Manufacturer data is stored as a QHash<quint16, QByteArray>
-                const auto manufacturerData = device.manufacturerData();
-                for (auto it = manufacturerData.cbegin(); it != manufacturerData.cend(); ++it) {
-                    quint16 manufacturerId = it.key();
-                    QByteArray data = it.value();
-                    
-                    // returns:
-                    //Manufacturer ID: "0x004c"
-                    // Raw data: "02 15 d3 5b 76 e2 e0 1c 9f ac ba 8d 7c e2 0b db a0 c6 90 f4 48 e8 cb"
-
-                    qDebug() << "Manufacturer ID:" << QString("0x%1").arg(manufacturerId, 4, 16, QLatin1Char('0'));
-                    qDebug() << "Raw data:" << data.toHex(' ') << " length: " << data.size();
-
-                    // If it's an iBeacon (Apple's company ID 0x004C)
-                    if (manufacturerId == 0x004C && data.size() >= 20) {
-                        // Parse iBeacon payload
-                        QByteArray uuidBytes = data.mid(2, 16); // bytes 4–19
-                        QString uuid;
-                        uuid += QString(uuidBytes.mid(0,4).toHex()) + "-";
-                        uuid += QString(uuidBytes.mid(4,2).toHex()) + "-";
-                        uuid += QString(uuidBytes.mid(6,2).toHex()) + "-";
-                        uuid += QString(uuidBytes.mid(8,2).toHex()) + "-";
-                        uuid += QString(uuidBytes.mid(10,6).toHex());
-                        uuid = uuid.toLower();
-
-                        quint16 major = (quint8(data[20]) << 8) | quint8(data[20]);
-                        quint16 minor = (quint8(data[21]) << 8) | quint8(data[22]);
-                        qint8 txPower = qint8(data[22]);
-
-                        qDebug() << "iBeacon UUID:" << uuid;
-                        qDebug() << "Major:" << major << "Minor:" << minor << "TxPower:" << txPower;
-                        emit beaconUuidDiscovered(uuid);
-                    }
-                }
-
-            
-            
-            
-            m_rssiHistory[address] = QList<int>();
-
-
-        }
-
-#if defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
-        QList<int> &history = m_rssiHistory[address];
-        history.append(rssi);
-        
-        // Keep only last 4 readings
-        if (history.size() > MAX_RSSI_HISTORY) {
-            history.removeFirst();
-        }
-        
-        double distance = MeeBlueHelper::estimateDistance(rssi);
-
-        // Always emit to QML on the main thread
-        QMetaObject::invokeMethod(this, [=]() {
-                emit newBeaconInfo(address, rssi, distance);
-        }, Qt::QueuedConnection);
-
-#endif
-        qDebug() << "Device" << address << device.name() << "RSSI:" << rssi;
-    }
-}
-
-void MeeBlueReader::emitSmoothedReadings()
-{
-    // Emit smoothed readings for all beacons in history
-    for (auto it = m_rssiHistory.begin(); it != m_rssiHistory.end(); ++it) {
-        QString address = it.key();
-        QList<int> readings = it.value();
-        
-        if (!readings.isEmpty()) {
-            // Calculate median RSSI
-            int smoothedRSSI = MeeBlueHelper::calculateMedianRSSI(readings);
-            double distance = MeeBlueHelper::estimateDistance(smoothedRSSI);
-            
-            QString info = QString("%1 | %2 dB | %3 m")
-                            .arg(address)
-                            .arg(smoothedRSSI)
-                            .arg(distance, 0, 'f', 2);
-            
-            //qDebug() << "Emitting smoothed:" << info << "(from" << readings.size() << "readings)";
-            
-            m_beaconInfo = info;
-            emit beaconInfoChanged();
-            emit newBeaconInfo(address, smoothedRSSI, distance);
-        }
-    }
-}
-
-void MeeBlueReader::scanError(QBluetoothDeviceDiscoveryAgent::Error error)
-{
-    QString errorString = m_discoveryAgent->errorString();
-    qWarning() << "Bluetooth scan error:" << error << errorString;
+    // Store the latest beacon information
+    m_beaconInfo = beacons;
     
-    m_beaconInfo = QString("Error: %1").arg(errorString);
-    emit beaconInfoChanged();
+    qDebug() << "MeeBlueReader::update() called with" << beacons.size() << "beacons";
+    
+    // Update all stations with the new beacon data
+    for (Station *station : m_stations) {
+        station->update(m_beaconInfo);
+    }
 }
 
-void MeeBlueReader::scanFinished()
+// ============================================================================
+// Station Implementation
+// ============================================================================
+
+Station::Station(int id, int major1, int minor1, int major2, int minor2, MeeBlueReader *parent)
+    : QObject(parent)
+    , m_id(id)
+    , m_major1(major1)
+    , m_minor1(minor1)
+    , m_major2(major2)
+    , m_minor2(minor2)
+    , m_previousAverage(0.0)
+    , m_filterThreshold(5.0)
 {
-    qDebug() << "Scan finished, waiting for next interval...";
+    qDebug() << "Station" << m_id << "created for beacons" 
+             << m_major1 << ":" << m_minor1 << "and" << m_major2 << ":" << m_minor2;
 }
 
-// most likely not needed.
-void MeeBlueReader::restartScan()
+void Station::update(const QList<BeaconInfo> &beacons)
 {
-    // Stop current scan if still active
-    if (m_discoveryAgent->isActive()) {
-        m_discoveryAgent->stop();
-        qDebug() << "Stop agent";
-        QTimer::singleShot(3000, this, &MeeBlueReader::restartScan);
+    // Find our two beacons in the list
+    const BeaconInfo *beacon1 = nullptr;
+    const BeaconInfo *beacon2 = nullptr;
+    
+    for (const BeaconInfo &beacon : beacons) {
+        if (beacon.major == m_major1 && beacon.minor == m_minor1) {
+            beacon1 = &beacon;
+        } else if (beacon.major == m_major2 && beacon.minor == m_minor2) {
+            beacon2 = &beacon;
+        }
+    }
+    
+    if (!beacon1 && !beacon2) {
+        qDebug() << "Station" << m_id << ": No beacons found";
         return;
     }
     
-    // Start a new scan
-    m_discoveryAgent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
+    // Process RSSI values with smoothing and filtering
+    QList<int> validRssiValues;
+    QList<int> rejectedRssiValues;
+    QList<Proximity> validProximityValues;
+    
+    // Process beacon1
+    if (beacon1) {
+        // Add to history
+        QList<int> &history1 = m_rssiHistory[m_minor1];
+        history1.append(beacon1->rssi);
+        if (history1.size() > 4) {
+            history1.removeFirst();
+        }
+        
+        // Smooth the readings
+        int smoothedRssi = smoothReadings(history1);
+        
+        // Filter based on previous average
+        if (m_previousAverage != 0.0) {
+            double difference = qAbs(smoothedRssi - m_previousAverage);
+            if (difference > m_filterThreshold) {
+                rejectedRssiValues.append(smoothedRssi);
+                qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi 
+                         << "rejected (diff" << difference << "dB)";
+            } else {
+                validRssiValues.append(smoothedRssi);
+                validProximityValues.append(beacon1->proximity);
+                qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi << "accepted";
+            }
+        } else {
+            validRssiValues.append(smoothedRssi);
+            validProximityValues.append(beacon1->proximity);
+            qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi << "accepted (initial)";
+        }
+    }
+    
+    // Process beacon2
+    if (beacon2) {
+        // Add to history
+        QList<int> &history2 = m_rssiHistory[m_minor2];
+        history2.append(beacon2->rssi);
+        if (history2.size() > 4) {
+            history2.removeFirst();
+        }
+        
+        // Smooth the readings
+        int smoothedRssi = smoothReadings(history2);
+        
+        // Filter based on previous average
+        if (m_previousAverage != 0.0) {
+            double difference = qAbs(smoothedRssi - m_previousAverage);
+            if (difference > m_filterThreshold) {
+                rejectedRssiValues.append(smoothedRssi);
+                qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi 
+                         << "rejected (diff" << difference << "dB)";
+            } else {
+                validRssiValues.append(smoothedRssi);
+                validProximityValues.append(beacon2->proximity);
+                qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi << "accepted";
+            }
+        } else {
+            validRssiValues.append(smoothedRssi);
+            validProximityValues.append(beacon2->proximity);
+            qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi << "accepted (initial)";
+        }
+    }
+    
+    // Special rule: if both readings were rejected but are close to each other, accept their average
+    if (validRssiValues.isEmpty() && rejectedRssiValues.count() == 2) {
+        double differenceBetweenReadings = qAbs(rejectedRssiValues[0] - rejectedRssiValues[1]);
+        if (differenceBetweenReadings <= m_filterThreshold) {
+            qDebug() << "Station" << m_id << "Both rejected but within" << m_filterThreshold 
+                     << "dB of each other - accepting";
+            validRssiValues = rejectedRssiValues;
+            if (beacon1) validProximityValues.append(beacon1->proximity);
+            if (beacon2) validProximityValues.append(beacon2->proximity);
+        }
+    }
+    
+    // Calculate average from valid readings
+    if (validRssiValues.isEmpty()) {
+        qDebug() << "Station" << m_id << "All readings rejected, keeping previous average";
+        return;
+    }
+    
+    // Calculate average RSSI
+    double sum = 0.0;
+    for (int rssi : validRssiValues) {
+        sum += rssi;
+    }
+    int averageRssi = static_cast<int>(sum / validRssiValues.count());
+    
+    // Update previous average
+    m_previousAverage = averageRssi;
+    
+    // Calculate average proximity (take floor = closer proximity)
+    Proximity averageProximity = Proximity::Unknown;
+    if (!validProximityValues.isEmpty()) {
+        int minProx = proximityToInt(validProximityValues[0]);
+        for (Proximity prox : validProximityValues) {
+            int proxInt = proximityToInt(prox);
+            if (proxInt > 0) { // Ignore Unknown when finding minimum
+                if (minProx == 0 || proxInt < minProx) {
+                    minProx = proxInt;
+                }
+            }
+        }
+        averageProximity = intToProximity(minProx);
+    }
+    
+    QString proximityStr = proximityToString(averageProximity);
+    QString beaconIds = QString("%1:%2, %3:%4")
+                            .arg(m_major1).arg(m_minor1)
+                            .arg(m_major2).arg(m_minor2);
+    
+    qDebug() << "========================================";
+    qDebug() << "Station" << m_id << "Average RSSI:" << averageRssi 
+             << "(from" << validRssiValues.count() << "readings)";
+    qDebug() << "Station" << m_id << "Proximity:" << proximityStr;
+    qDebug() << "========================================";
+    
+    // Emit signal
+    emit stationUpdated(m_id, averageRssi, proximityStr, beaconIds);
 }
 
-bool MeeBlueReader::isTargetDevice(const QBluetoothDeviceInfo &device) const
+// Static helper methods for Station
+
+int Station::smoothReadings(const QList<int> &values)
 {
-    // Check if device name contains "meeblue" (case-insensitive)
-    QString deviceName = device.name().toLower();
-    if (deviceName.contains("meeblue")) {
-        return true;
+    if (values.isEmpty()) {
+        return 0;
     }
     
-    // Check if device address is in the device list
-    QString address = device.address().toString();
-    if (m_deviceList.contains(address, Qt::CaseInsensitive)) {
-        return true;
+    // Filter out zero and invalid values
+    QList<int> validValues;
+    for (int val : values) {
+        if (val != 0) {
+            validValues.append(val);
+        }
     }
     
-    return false;
+    if (validValues.isEmpty()) {
+        return 0;
+    }
+    
+    // Create a sorted copy
+    QList<int> sortedValues = validValues;
+    std::sort(sortedValues.begin(), sortedValues.end());
+    
+    int size = sortedValues.size();
+    if (size % 2 == 0) {
+        // Even number: average of two middle values
+        return (sortedValues[size/2 - 1] + sortedValues[size/2]) / 2;
+    } else {
+        // Odd number: middle value
+        return sortedValues[size/2];
+    }
 }
 
+QString Station::proximityToString(Proximity prox)
+{
+    switch (prox) {
+        case Proximity::Immediate: return "Immediate";
+        case Proximity::Near: return "Near";
+        case Proximity::Far: return "Far";
+        default: return "Unknown";
+    }
+}
+
+int Station::proximityToInt(Proximity prox)
+{
+    return static_cast<int>(prox);
+}
+
+Proximity Station::intToProximity(int val)
+{
+    if (val == 1) return Proximity::Immediate;
+    if (val == 2) return Proximity::Near;
+    if (val == 3) return Proximity::Far;
+    return Proximity::Unknown;
+}

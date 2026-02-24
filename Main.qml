@@ -16,7 +16,7 @@ Window {
             spacing: 20
             
             Text {
-                text: "MeeBlue Beacon Reader double 0.2.2"
+                text: "MeeBlue Beacon Reader 0.3.0"
                 font.pixelSize: 24
                 font.bold: true
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -73,63 +73,34 @@ Window {
         }
     }
     
+    // MeeBlueReader station connection
     Connections {
         target: meeBlueReader
-        function onNewBeaconInfo(address, rssi, distance) {
-            // Check if beacon already exists in the model
+        function onNewStationInfo(stationId, rssi, proximity, beaconIds) {
+            // Format the station identifier
+            var address = "Station " + stationId + " [" + beaconIds + "]";
+            
+            // Check if station already exists in the model
             var found = false;
             for (var i = 0; i < beaconModel.count; i++) {
                 if (beaconModel.get(i).address === address) {
-                    // Update existing beacon
+                    // Update existing station
                     beaconModel.set(i, {
                         "address": address,
                         "rssi": rssi,
-                        "distance": distance.toFixed(2)
+                        "distance": proximity
                     });
                     found = true;
                     break;
                 }
             }
             
-            // Add new beacon if not found
+            // Add new station if not found
             if (!found) {
                 beaconModel.append({
                     "address": address,
                     "rssi": rssi,
-                    "distance": distance.toFixed(2)
-                });
-            }
-        }
-    }
-    
-    // iOS iBeacon Scanner connection (only active on iOS)
-    Connections {
-        target: typeof ibeaconScanner !== 'undefined' ? ibeaconScanner : null
-        function onNewBeaconInfo(uuid, rssi, proximity, major, minor) {
-            // Format the beacon identifier with UUID, major, and minor
-            var address = uuid + " (" + major + ":" + minor + ")";
-            
-            // Check if beacon already exists in the model
-            var found = false;
-            for (var i = 0; i < beaconModel.count; i++) {
-                if (beaconModel.get(i).address === address) {
-                    // Update existing beacon
-                    beaconModel.set(i, {
-                        "address": address,
-                        "rssi": rssi,
-                        "distance": proximity //distance.toFixed(2) // was distance
-                    });
-                    found = true;
-                    break;
-                }
-            }
-            
-            // Add new beacon if not found
-            if (!found) {
-                beaconModel.append({
-                    "address": address,
-                    "rssi": rssi,
-                    "distance": proximity //distance.toFixed(2)
+                    "distance": proximity
                 });
             }
         }

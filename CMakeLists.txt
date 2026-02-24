@@ -16,18 +16,19 @@ set(SOURCES
     meebluereader.cpp
     meebluehelper.h
     meebluehelper.cpp
+    ibeaconscanner.h  # cross-platform interface, always needed
 )
 
-# Add iOS-specific files
+# Add platform-specific IBeaconScanner implementation
 if (IOS)
-    list(APPEND SOURCES
-        ibeaconscanner.h
-        ibeaconscanner_ios.mm
-    )
+    list(APPEND SOURCES ibeaconscanner_ios.mm)
     # Enable Objective-C++ for .mm files only
     set_source_files_properties(ibeaconscanner_ios.mm PROPERTIES
         COMPILE_FLAGS "-x objective-c++"
     )
+else()
+    # Linux, Android, and other non-iOS platforms
+    list(APPEND SOURCES ibeaconscanner_linux.cpp)
 endif()
 
 qt_add_executable(appMeeBlueReader
@@ -40,6 +41,7 @@ qt_add_qml_module(appMeeBlueReader
     QML_FILES
         Main.qml
         RESOURCES android/AndroidManifest.xml android/build.gradle android/res/values/libs.xml android/res/xml/qtprovider_paths.xml android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.properties android/gradle.properties android/gradlew android/gradlew.bat
+        RESOURCES refactoring-notes.md
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
