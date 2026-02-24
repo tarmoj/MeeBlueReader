@@ -68,7 +68,7 @@ Item {
                 }
 
                 Behavior on width {
-                    NumberAnimation { duration: 20 }
+                    NumberAnimation { duration: 1000 }
                 }
             }
         }
@@ -76,6 +76,14 @@ Item {
         Label {
             id: proximityLabel
             text: proximity
+            Layout.preferredWidth: contentMetrics.width
+
+            TextMetrics {
+                id: contentMetrics
+                text: "Immediate"
+                font: statusLabel.font
+            }
+
 
         }
 

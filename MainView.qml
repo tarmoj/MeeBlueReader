@@ -8,23 +8,23 @@ Item {
     width: 506
     height: 900
 
-
+    ListModel {
+        id: stationModel
+    }
 
     Connections {
         target: meeBlueReader
         function onNewStationInfo(stationId, rssi, proximity, beaconIds) {
-            // Format the station identifier
-            var address = "Station " + stationId + " [" + beaconIds + "]";
-
             // Check if station already exists in the model
             var found = false;
-            for (var i = 0; i < beaconModel.count; i++) {
-                if (beaconModel.get(i).address === address) {
+            for (var i = 0; i < stationModel.count; i++) {
+                if (stationModel.get(i).stationId === stationId) {
                     // Update existing station
-                    beaconModel.set(i, {
-                        "address": address,
+                    stationModel.set(i, {
+                        "stationId": stationId,
                         "rssi": rssi,
-                        "distance": proximity
+                        "proximity": proximity,
+                        "beaconIds": beaconIds
                     });
                     found = true;
                     break;
@@ -33,10 +33,11 @@ Item {
 
             // Add new station if not found
             if (!found) {
-                beaconModel.append({
-                    "address": address,
+                stationModel.append({
+                    "stationId": stationId,
                     "rssi": rssi,
-                    "distance": proximity
+                    "proximity": proximity,
+                    "beaconIds": beaconIds
                 });
             }
         }
@@ -67,12 +68,14 @@ Item {
             columnSpacing: 15
 
             Repeater {
-                model:  6
+                id: stationRepeater
+                model: stationModel
 
                 StationView {
-                    stationNumber: index+1
-                    rssi:  -80 + Math.random()*40
-                    color: Qt.rgba(Math.random(), 0.5, Math.random(), 1)
+                    stationNumber: model.stationId
+                    rssi: model.rssi
+                    proximity: model.proximity
+                    color: Qt.hsla(model.stationId * 0.1618, 0.7, 0.5, 1)
                     Layout.fillWidth: true
                 }
             }
