@@ -64,15 +64,16 @@ Item {
             property double cellWidth: width/columns - columns*columnSpacing
 
             rowSpacing: 5
-            columnSpacing: 5
+            columnSpacing: 15
 
             Repeater {
                 model:  6
 
-                Rectangle {
-                    height: 20
-                    Layout.fillWidth : true
-                    color: "lightblue"
+                StationView {
+                    stationNumber: index+1
+                    rssi:  -80 + Math.random()*40
+                    color: Qt.rgba(Math.random(), 0.5, Math.random(), 1)
+                    Layout.fillWidth: true
                 }
             }
         }
