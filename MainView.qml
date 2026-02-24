@@ -1,11 +1,14 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 
 
-Rectangle {
-    color: "#f0f0f0"
+Item {
+    //color: "#f0f0f0"
     width: 506
     height: 900
+
+
 
     Connections {
         target: meeBlueReader
@@ -39,6 +42,54 @@ Rectangle {
         }
     }
 
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 10
+        spacing: 10
+
+        RowLayout {
+            id: statusRow
+
+            Label {
+                id: statusLabel
+
+                text: "Status"
+            }
+        }
+
+        GridLayout {
+            id: stationsArea
+            Layout.fillWidth: true
+            columns: 2
+            property double cellWidth: width/columns - columns*columnSpacing
+
+            rowSpacing: 5
+            columnSpacing: 5
+
+            Repeater {
+                model:  6
+
+                Rectangle {
+                    height: 20
+                    Layout.fillWidth : true
+                    color: "lightblue"
+                }
+            }
+        }
+
+        Rectangle {
+            id: contentArea
+            Layout.fillHeight: true
+            Layout.fillWidth:  true
+
+            color: "transparent"
+            border.color: Material.dividerColor
+
+        }
+
+    }
+
+    /* original:
     Column {
         anchors.fill: parent
         anchors.margins: 20
@@ -93,6 +144,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
         }
     }
+    */
 }
 
 
