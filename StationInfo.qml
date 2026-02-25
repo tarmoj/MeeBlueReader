@@ -12,6 +12,28 @@ Item {
     property string proximity: "Unknown"
     property color color: "green"
     property double level:  rssiToLevel(rssi)
+    property var notationImageRef: null
+
+    property bool cooldownActive: false
+
+    Timer {
+        id: cooldownTimer
+        interval: 5000
+        repeat: false
+        onTriggered: station.cooldownActive = false
+    }
+
+    onProximityChanged: {
+        if (cooldownActive || notationImageRef === null) return
+        var src = ""
+        if (proximity === "Immediate")
+            src = "qrc:/images/notation/" + stationNumber + "-immediate.png"
+        else if (proximity === "Near")
+            src = "qrc:/images/notation/" + stationNumber + "-near.png"
+        notationImageRef.source = src
+        cooldownActive = true
+        cooldownTimer.restart()
+    }
 
     function rssiToLevel(rssi) {
         if (rssi <= -80) return 0;

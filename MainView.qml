@@ -83,6 +83,7 @@ Item {
                     proximity: model.proximity
                     color: Qt.hsla(model.stationId * 0.1618, 0.7, 0.5, 1)
                     Layout.fillWidth: true
+                    notationImageRef: notationImage
                 }
             }
         }
