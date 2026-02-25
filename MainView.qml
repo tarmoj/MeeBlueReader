@@ -7,9 +7,12 @@ Item {
     width: 506
     height: 900
 
+    property int strongestStation: 0;
+
     ListModel {
         id: stationModel
     }
+
 
     Connections {
         target: meeBlueReader
@@ -39,6 +42,17 @@ Item {
                     "beaconIds": beaconIds
                 });
             }
+
+            // Find strongest station (highest RSSI)
+            var maxRssi = -999;
+            var maxStationId = 0;
+            for (var j = 0; j < stationModel.count; j++) {
+                if (stationModel.get(j).rssi > maxRssi) {
+                    maxRssi = stationModel.get(j).rssi;
+                    maxStationId = stationModel.get(j).stationId;
+                }
+            }
+            strongestStation = maxStationId;
         }
     }
 
@@ -84,6 +98,7 @@ Item {
                     color: Qt.hsla(model.stationId * 0.1618, 0.7, 0.5, 1)
                     Layout.fillWidth: true
                     notationImageRef: notationImage
+                    strongestStation: parent.parent.parent.strongestStation
                 }
             }
         }
