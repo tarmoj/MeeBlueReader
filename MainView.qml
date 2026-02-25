@@ -4,7 +4,6 @@ import QtQuick.Controls
 
 
 Item {
-    //color: "#f0f0f0"
     width: 506
     height: 900
 
@@ -95,6 +94,15 @@ Item {
 
             color: "transparent"
             border.color: Material.dividerColor
+
+            Image {
+                id: notationImage
+                anchors.centerIn: parent
+                width: parent.width * 0.8
+                fillMode: Image.PreserveAspectFit
+
+                source: "" //"qrc:/images/notation/1-immediate.png"
+            }
 
         }
 

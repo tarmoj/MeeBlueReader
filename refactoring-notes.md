@@ -61,3 +61,19 @@ Keep one header file but provide different .cpp / .mm  files for different opera
 ### UI
 - update necessary signals and slots logic, other things leave as it is for now.
 - do not implement websocket connection yet.
+
+
+#### Defining sound/image events:
+
+"event" : {   
+    "name": "name of the event or empty"
+    "station": 1,
+    "zone": "proximity|(empty string - not used)",
+    "inOut": "in|out",
+    "rssi": 0 (not used) |-80..-40,
+    "updDown": "up|down",
+    "retriggerAllowedAfter": 10, // in seconds
+    "sound": " fileName.mp3 | ''",
+    "image": " fileName| '' "
+
+}
