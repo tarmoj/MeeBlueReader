@@ -13,7 +13,7 @@ Item {
     property color color: "green"
     property double level:  rssiToLevel(rssi)
     property var notationImageRef: null
-    property int strongestStation: 0
+    //property int strongestStation: 0
 
     property bool cooldownActive: false
 
@@ -25,7 +25,7 @@ Item {
     }
 
     onProximityChanged: {
-        if (cooldownActive || notationImageRef === null || stationNumber !== strongestStation) return
+        if (cooldownActive || notationImageRef === null || stationNumber !== mainView.strongestStation) return
         var src = ""
         if (proximity === "Immediate")
             src = "qrc:/images/notation/" + stationNumber + "-immediate.png"

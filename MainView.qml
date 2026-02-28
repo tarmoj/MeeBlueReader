@@ -4,6 +4,7 @@ import QtQuick.Controls
 
 
 Item {
+    id: mainView
     width: 506
     height: 900
 
@@ -56,6 +57,11 @@ Item {
         }
     }
 
+    onStrongestStationChanged: {
+        statusLabel.text = qsTr("Strongest station: ") + strongestStation;
+    }
+
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
@@ -98,7 +104,7 @@ Item {
                     color: Qt.hsla(model.stationId * 0.1618, 0.7, 0.5, 1)
                     Layout.fillWidth: true
                     notationImageRef: notationImage
-                    strongestStation: parent.parent.parent.strongestStation
+                    // strongestStation: mainView.strongestStation
                 }
             }
         }
