@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtMultimedia
 
 
 Item {
@@ -9,6 +10,27 @@ Item {
     height: 900
 
     property int strongestStation: 0;
+
+    // --- Sound player (MP3) ---
+    // Threshold -65 → sound3.mp3, -55 → sound2.mp3, -45 → sound1.mp3
+    MediaPlayer {
+        id: soundPlayer
+        audioOutput: AudioOutput { volume: 1.0 }
+    }
+
+    // Called by StationInfo when the strongest station crosses an RSSI threshold upward.
+    // threshold: -65, -55, or -45
+    function triggerSound(threshold) {
+        console.log("Triggering sound on: ", threshold)
+        if (threshold === -45) {
+            soundPlayer.source = "qrc:/sounds/sound1.mp3"
+        } else if (threshold === -55) {
+            soundPlayer.source = "qrc:/sounds/sound2.mp3"
+        } else if (threshold === -65) {
+            soundPlayer.source = "qrc:/sounds/sound3.mp3"
+        }
+        soundPlayer.play()
+    }
 
     ListModel {
         id: stationModel

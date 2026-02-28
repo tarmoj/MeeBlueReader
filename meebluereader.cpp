@@ -124,17 +124,17 @@ void Station::update(const QList<BeaconInfo> &beacons)
             double difference = qAbs(smoothedRssi - m_previousAverage);
             if (difference > m_filterThreshold) {
                 rejectedRssiValues.append(smoothedRssi);
-                qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi 
-                         << "rejected (diff" << difference << "dB)";
+                // qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi
+                //          << "rejected (diff" << difference << "dB)";
             } else {
                 validRssiValues.append(smoothedRssi);
                 validProximityValues.append(beacon1->proximity);
-                qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi << "accepted";
+                //qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi << "accepted";
             }
         } else {
             validRssiValues.append(smoothedRssi);
             validProximityValues.append(beacon1->proximity);
-            qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi << "accepted (initial)";
+            //qDebug() << "Station" << m_id << "Beacon1 RSSI" << smoothedRssi << "accepted (initial)";
         }
     }
     
@@ -155,17 +155,17 @@ void Station::update(const QList<BeaconInfo> &beacons)
             double difference = qAbs(smoothedRssi - m_previousAverage);
             if (difference > m_filterThreshold) {
                 rejectedRssiValues.append(smoothedRssi);
-                qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi 
-                         << "rejected (diff" << difference << "dB)";
+                // qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi
+                //          << "rejected (diff" << difference << "dB)";
             } else {
                 validRssiValues.append(smoothedRssi);
                 validProximityValues.append(beacon2->proximity);
-                qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi << "accepted";
+                //qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi << "accepted";
             }
         } else {
             validRssiValues.append(smoothedRssi);
             validProximityValues.append(beacon2->proximity);
-            qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi << "accepted (initial)";
+            //qDebug() << "Station" << m_id << "Beacon2 RSSI" << smoothedRssi << "accepted (initial)";
         }
     }
     
@@ -183,7 +183,7 @@ void Station::update(const QList<BeaconInfo> &beacons)
     
     // Calculate average from valid readings
     if (validRssiValues.isEmpty()) {
-        qDebug() << "Station" << m_id << "All readings rejected, keeping previous average";
+        //qDebug() << "Station" << m_id << "All readings rejected, keeping previous average";
         return;
     }
     
@@ -217,11 +217,11 @@ void Station::update(const QList<BeaconInfo> &beacons)
                             .arg(m_major1).arg(m_minor1)
                             .arg(m_major2).arg(m_minor2);
     
-    qDebug() << "========================================";
-    qDebug() << "Station" << m_id << "Average RSSI:" << averageRssi 
-             << "(from" << validRssiValues.count() << "readings)";
-    qDebug() << "Station" << m_id << "Proximity:" << proximityStr;
-    qDebug() << "========================================";
+    // qDebug() << "========================================";
+    // qDebug() << "Station" << m_id << "Average RSSI:" << averageRssi
+    //          << "(from" << validRssiValues.count() << "readings)";
+    // qDebug() << "Station" << m_id << "Proximity:" << proximityStr;
+    // qDebug() << "========================================";
     
     // Emit signal
     emit stationUpdated(m_id, averageRssi, proximityStr, beaconIds);

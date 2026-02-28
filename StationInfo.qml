@@ -16,6 +16,21 @@ Item {
     //property int strongestStation: 0
 
     property bool cooldownActive: false
+    property int previousRssi: -999
+
+    onRssiChanged: {
+        if (stationNumber === mainView.strongestStation) {
+            // Fire for the highest crossed threshold only (most significant crossing)
+            if (rssi > -45 && previousRssi <= -45) {
+                mainView.triggerSound(-45)
+            } else if (rssi > -55 && previousRssi <= -55) {
+                mainView.triggerSound(-55)
+            } else if (rssi > -65 && previousRssi <= -65) {
+                mainView.triggerSound(-65)
+            }
+        }
+        previousRssi = rssi
+    }
 
     Timer {
         id: cooldownTimer

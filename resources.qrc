@@ -10,5 +10,8 @@
         <file>images/notation/3-near.png</file>
         <file>images/M.png</file>
         <file>images/info.svg</file>
+        <file>sounds/sound1.mp3</file>
+        <file>sounds/sound2.mp3</file>
+        <file>sounds/sound3.mp3</file>
     </qresource>
 </RCC>

@@ -130,13 +130,9 @@ ApplicationWindow {
         id: swipeView
         anchors.fill: parent
 
-        MainView {
-            id: mainView
-        }
+        MainView { }
 
-        SettingsView {
-            id: settingsView
-        }
+        SettingsView {  }
     }
 
     

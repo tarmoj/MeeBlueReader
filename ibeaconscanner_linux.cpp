@@ -139,9 +139,9 @@ private slots:
             info.proximity = proximityFromRSSI(rssi);
             m_latestBeacons[key] = info;
 
-            qDebug() << "iBeacon:" << uuid
-                     << "major:" << major << "minor:" << minor
-                     << "rssi:" << rssi;
+            // qDebug() << "iBeacon:" << uuid
+            //          << "major:" << major << "minor:" << minor
+            //          << "rssi:" << rssi;
         }
     }
 
