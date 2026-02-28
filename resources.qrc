@@ -9,5 +9,6 @@
         <file>images/notation/3-immediate.png</file>
         <file>images/notation/3-near.png</file>
         <file>images/M.png</file>
+        <file>images/info.svg</file>
     </qresource>
 </RCC>

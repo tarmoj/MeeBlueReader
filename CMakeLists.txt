@@ -31,8 +31,11 @@ else()
     list(APPEND SOURCES ibeaconscanner_linux.cpp)
 endif()
 
+set(CMAKE_AUTORCC ON)
+
 qt_add_executable(appMeeBlueReader
     ${SOURCES}
+    resources.qrc
 )
 
 qt_add_qml_module(appMeeBlueReader
@@ -50,19 +53,19 @@ qt_add_resources(appMeeBlueReader "conf"
     FILES qtquickcontrols2.conf
 )
 
-qt_add_resources(appMeeBlueReader "resources"
-    PREFIX "/"
-    FILES resources.qrc
-    FILES 
-        images/menu.svg
-        images/notation/1-immediate.png
-        images/notation/1-near.png
-        images/notation/2-immediate.png
-        images/notation/2-near.png
-        images/notation/3-immediate.png
-        images/notation/3-near.png
-        images/M.png
-)
+# qt_add_resources(appMeeBlueReader "resources"
+#     PREFIX "/"
+#     FILES resources.qrc
+#     FILES
+#         images/menu.svg
+#         images/notation/1-immediate.png
+#         images/notation/1-near.png
+#         images/notation/2-immediate.png
+#         images/notation/2-near.png
+#         images/notation/3-immediate.png
+#         images/notation/3-near.png
+#         images/M.png
+# )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

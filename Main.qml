@@ -65,7 +65,7 @@ ApplicationWindow {
                 anchors.left: parent.left
                 anchors.leftMargin: 5
                 anchors.verticalCenter: parent.verticalCenter
-                icon.source: "qrc:/images/menu.svg"
+                icon.source: "qrc:/images/info.svg"
                 onClicked: drawer.opened ? drawer.close() : drawer.open()
             }
         }
