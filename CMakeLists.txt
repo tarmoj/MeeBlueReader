@@ -114,9 +114,8 @@ if (APPLE)
         )
 
         # Launch screen storyboard
-        target_sources(appMeeBlueReader PRIVATE "${CMAKE_SOURCE_DIR}/ios/LaunchScreen.storyboard")
-        set_source_files_properties("${CMAKE_SOURCE_DIR}/ios/LaunchScreen.storyboard" PROPERTIES
-            MACOSX_PACKAGE_LOCATION Resources
+        set_target_properties(appMeeBlueReader PROPERTIES
+            QT_IOS_LAUNCH_SCREEN "${CMAKE_SOURCE_DIR}/ios/LaunchScreen.storyboard"
         )
 
 

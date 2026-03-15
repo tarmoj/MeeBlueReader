@@ -108,13 +108,13 @@ ApplicationWindow {
         id: helpDialog
         buttons: MessageDialog.Ok
 
-        text: qsTr(`MeeBlue Reader
+        text: qsTr(`
+MeeBlue Reader
 
-                   More info comes here.
+More info comes here.
+Built using Qt framework.
 
-                   Built using Qt framework.
-
-                   (c) Tarmo Johannes trmjhnns@gmail.com`)
+(c) Tarmo Johannes trmjhnns@gmail.com`)
 
         onButtonClicked: function (button, role) { // does not close on Android otherwise
             switch (button) {
