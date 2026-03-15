@@ -90,9 +90,10 @@ void Station::update(const QList<BeaconInfo> &beacons)
     const BeaconInfo *beacon2 = nullptr;
     
     for (const BeaconInfo &beacon : beacons) {
-        if (beacon.major == m_major1 && beacon.minor == m_minor1) {
+        // TODO: re-enable major check once beacon deployment is finalised
+        if (/* beacon.major == m_major1 && */ beacon.minor == m_minor1) {
             beacon1 = &beacon;
-        } else if (beacon.major == m_major2 && beacon.minor == m_minor2) {
+        } else if (/* beacon.major == m_major2 && */ beacon.minor == m_minor2) {
             beacon2 = &beacon;
         }
     }

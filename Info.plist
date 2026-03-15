@@ -4,6 +4,10 @@
 <plist version="1.0">
 <dict>
 
+    <!-- App Icon (references AppIcon set in the ios/ asset catalog) -->
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
+
     <!-- Basic App Information -->
     <key>CFBundleDisplayName</key>
     <string>MeeBlueReader</string>
@@ -12,11 +16,13 @@
     <key>CFBundleIdentifier</key>
     <string>org.tarmoj.meeblue</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>4.12</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>0.4.1</string>
     <key>CFBundleExecutable</key>
     <string>appMeeBlueReader</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
 
     <!-- Platform Support -->
     <key>LSMinimumSystemVersion</key>
@@ -30,6 +36,13 @@
     <!-- App Category (optional but recommended for macOS) -->
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.utilities</string>
+
+    <key>NSCameraUsageDescription</key>
+    <string>No camera needed</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>No need for microphone</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>No Photo Library needed</string>
 
     <!-- Bluetooth Permissions -->
     <key>NSBluetoothAlwaysUsageDescription</key>

@@ -103,6 +103,27 @@ if (APPLE)
 
     # Link iOS-specific frameworks
     if (IOS)
+
+        # App icons from asset catalog in ios/ folder
+        target_sources(appMeeBlueReader PRIVATE "${CMAKE_SOURCE_DIR}/ios/Assets.xcassets")
+        set_source_files_properties("${CMAKE_SOURCE_DIR}/ios/Assets.xcassets" PROPERTIES
+            MACOSX_PACKAGE_LOCATION Resources
+        )
+        set_target_properties(appMeeBlueReader PROPERTIES
+            XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
+        )
+
+        # Launch screen storyboard
+        target_sources(appMeeBlueReader PRIVATE "${CMAKE_SOURCE_DIR}/ios/LaunchScreen.storyboard")
+        set_source_files_properties("${CMAKE_SOURCE_DIR}/ios/LaunchScreen.storyboard" PROPERTIES
+            MACOSX_PACKAGE_LOCATION Resources
+        )
+
+
+        # This command handles embedding and code signing of FFmpeg libraries
+        qt_add_ios_ffmpeg_libraries(appMeeBlueReader)
+
+
         find_library(CORELOCATION_FRAMEWORK CoreLocation)
         find_library(FOUNDATION_FRAMEWORK Foundation)
         target_link_libraries(appMeeBlueReader PUBLIC

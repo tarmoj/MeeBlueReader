@@ -12,7 +12,7 @@ ApplicationWindow {
     height: 900
     minimumWidth: 350
     visible: true
-    property string version: "0.4.0"
+    property string version: "0.4.1"
     title: qsTr("MeeBlue Reader " + version)
     color: Material.background
 
@@ -65,7 +65,7 @@ ApplicationWindow {
                 anchors.left: parent.left
                 anchors.leftMargin: 5
                 anchors.verticalCenter: parent.verticalCenter
-                icon.source: "qrc:/images/info.svg"
+                icon.source: "qrc:/images/menu.svg"
                 onClicked: drawer.opened ? drawer.close() : drawer.open()
             }
         }
@@ -90,7 +90,7 @@ ApplicationWindow {
 
             MenuItem {
                 text: qsTr("Info")
-                icon.source: "qrc:/images/menu.svg"
+                icon.source: "qrc:/images/info.svg"
                 onTriggered: {
                     drawer.close()
                     helpDialog.open()
