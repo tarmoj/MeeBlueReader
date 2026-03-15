@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtCore
 
+
 ApplicationWindow {
     id: app
     width: 506
@@ -21,6 +22,11 @@ ApplicationWindow {
 
     Settings {
         id: appSettings
+
+        property alias userID:    settingsView.userID
+        property alias userName:  settingsView.userName
+        property alias serverIP:  settingsView.serverIP
+        property alias serverPort: settingsView.serverPort
 
     }
 
@@ -132,7 +138,7 @@ Built using Qt framework.
 
         MainView { }
 
-        SettingsView {  }
+        SettingsView { id: settingsView }
     }
 
     

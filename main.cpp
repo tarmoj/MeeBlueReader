@@ -27,6 +27,10 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
+    app.setOrganizationName("Tarmo Johannes Events and Software");
+    app.setOrganizationDomain("meeblue-reader.org");
+    app.setApplicationName("MeeBlue Reader");
+
 
 #ifdef Q_OS_ANDROID
 

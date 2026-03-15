@@ -4,10 +4,17 @@ import QtQuick.Controls
 import QtMultimedia
 
 
-Item {
+Rectangle {
     id: mainView
     width: 506
     height: 900
+
+    gradient: Gradient {
+        GradientStop { position: 0.0; color: Material.backgroundColor }
+        GradientStop { position: 0.6; color: Material.backgroundColor }
+        GradientStop { position: 0.8; color: "#194eb4" }
+        GradientStop { position: 1; color: "#750d95" }
+    }
 
     property int strongestStation: 0;
 
