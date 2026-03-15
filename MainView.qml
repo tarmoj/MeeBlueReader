@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtMultimedia
+import QtWebSockets
 
 
 Rectangle {
@@ -86,9 +87,9 @@ Rectangle {
         }
     }
 
-    onStrongestStationChanged: {
-        statusLabel.text = qsTr("Strongest station: ") + strongestStation;
-    }
+    // onStrongestStationChanged: {
+    //     statusLabel.text = qsTr("Strongest station: ") + strongestStation;
+    // }
 
 
     ColumnLayout {
@@ -98,11 +99,12 @@ Rectangle {
 
         RowLayout {
             id: statusRow
+            spacing: 10
 
             Label {
                 id: statusLabel
-
-                text: qsTr("Status messages come here.")
+                text: qsTr("Connected: ") + (socket.active ? qsTr("YES") : qsTr("NO"))
+                      + " | " + qsTr("Strongest station: ") + strongestStation;
             }
         }
 

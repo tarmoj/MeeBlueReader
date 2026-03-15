@@ -4,7 +4,7 @@ project(MeeBlueReader VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Bluetooth Core Gui Multimedia Quick CorePrivate)
+find_package(Qt6 REQUIRED COMPONENTS Bluetooth Core Gui Multimedia Quick WebSockets CorePrivate)
 
 
 qt_standard_project_setup(REQUIRES 6.9)
@@ -84,6 +84,7 @@ target_link_libraries(appMeeBlueReader PUBLIC
     Qt::Gui
     Qt::Multimedia
     Qt::Quick
+    Qt::WebSockets
     Qt::CorePrivate
 )
 

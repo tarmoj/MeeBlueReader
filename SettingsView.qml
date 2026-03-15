@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtWebSockets
 
 Rectangle {
     id: settingsView
@@ -22,7 +23,7 @@ Rectangle {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
-        spacing: 10
+        spacing: 15
 
 
         Label {
@@ -49,29 +50,44 @@ Rectangle {
             }
         }
 
-        RowLayout {
+        Flow {
             id: serverRow
             Layout.fillWidth: true
             spacing: 5
 
-            Label { text: qsTr("Websocket server IP:") }
+            Label {
+                height: serverIPTextField.height
+                text: qsTr("Websocket server IP:")
+                verticalAlignment: Text.AlignVCenter
+            }
             TextField {
                 id: serverIPTextField
-                Layout.preferredWidth: 180
+                width: 165
                 text: qsTr("192.168.1.199")
+
             }
 
-            Label { text: qsTr("Port:") }
+            Label {
+                height: serverPortSpinBox.height
+                verticalAlignment: Text.AlignVCenter
+                text: qsTr("Port:")
+            }
             SpinBox {
                 id: serverPortSpinBox
+                width: 80
+                up.indicator:   Item { width: 0 }
+                down.indicator: Item { width: 0 }
                 from: 1024
                 to: 65535
+                editable: true
                 value: 6789
             }
 
             Button {
                 id: connectButton
-                text: qsTr("Connect")
+                text: socket.status === WebSocket.Open ?  qsTr("Connected")  :  ( socket.status === WebSocket.Connecting ? qsTr("Connecting...") :  qsTr("Connect") )
+                enabled: socket.status !== WebSocket.Open
+                onClicked: socket.active = true
             }
         }
 

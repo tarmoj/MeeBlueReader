@@ -237,7 +237,7 @@ void IBeaconScanner::stopScanning()
 
 void IBeaconScanner::updateBeacons(const QVariantList &beacons)
 {
-    qDebug() << "IBeaconScanner::updateBeacons() called with" << beacons.size() << "beacons";
+    // qDebug() << "IBeaconScanner::updateBeacons() called with" << beacons.size() << "beacons";
 
     QList<BeaconInfo> beaconList;
     for (const QVariant &v : beacons) {

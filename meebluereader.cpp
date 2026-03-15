@@ -57,7 +57,7 @@ void MeeBlueReader::update(const QList<BeaconInfo> &beacons)
     // Store the latest beacon information
     m_beaconInfo = beacons;
     
-    qDebug() << "MeeBlueReader::update() called with" << beacons.size() << "beacons";
+    //qDebug() << "MeeBlueReader::update() called with" << beacons.size() << "beacons";
     
     // Update all stations with the new beacon data
     for (Station *station : m_stations) {
