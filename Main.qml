@@ -5,7 +5,6 @@ import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtCore
-import QtWebSockets
 
 
 ApplicationWindow {
@@ -30,41 +29,6 @@ ApplicationWindow {
         property alias serverPort: settingsView.serverPort
 
     }
-
-    // MeeBlueReader station connection
-
-    WebSocket {
-        id: socket
-        url: "ws://" + settingsView.serverIP + ":" + settingsView.serverPort
-
-        onTextMessageReceived: function (message) {
-            console.log("WS message received:", message)
-        }
-
-        onStatusChanged: {
-            if (socket.status === WebSocket.Error) {
-                console.log("WebSocket error:", socket.errorString, url)
-                socket.active = false
-            } else if (socket.status === WebSocket.Open) {
-                console.log("WebSocket open:", url)
-            } else if (socket.status === WebSocket.Closed) {
-                console.log("WebSocket closed")
-                socket.active = false
-            } else if (socket.status === WebSocket.Connecting) {
-                console.log("WebSocket connecting:", url)
-            }
-        }
-        active: true
-    }
-
-    function sendWsMessage(message) {
-        if (socket.status === WebSocket.Open) {
-            socket.sendTextMessage(message)
-        } else {
-            console.warn("sendWsMessage: socket not open")
-        }
-    }
-
 
     header: ToolBar {
         id: toolBar
@@ -168,9 +132,15 @@ Built using Qt framework.
         id: swipeView
         anchors.fill: parent
 
-        MainView { }
+        MainView {
+            id: mainPage
+            settingsRef: settingsView
+        }
 
-        SettingsView { id: settingsView }
+        SettingsView {
+            id: settingsView
+            socketRef: mainPage.wsSocket
+        }
     }
 
     

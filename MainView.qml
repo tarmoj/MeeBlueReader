@@ -9,6 +9,8 @@ Rectangle {
     id: mainView
     width: 506
     height: 900
+    property var settingsRef: null
+    property alias wsSocket: socket
 
     gradient: Gradient {
         GradientStop { position: 0.0; color: Material.backgroundColor }
@@ -18,6 +20,74 @@ Rectangle {
     }
 
     property int strongestStation: 0;
+
+    WebSocket {
+        id: socket
+        url: settingsRef ? ("ws://" + settingsRef.serverIP + ":" + settingsRef.serverPort) : ""
+
+        onTextMessageReceived: function (message) {
+            console.log("WS message received:", message)
+        }
+
+        onStatusChanged: {
+            if (socket.status === WebSocket.Error) {
+                console.log("WebSocket error:", socket.errorString, url)
+                socket.active = false
+            } else if (socket.status === WebSocket.Open) {
+                console.log("WebSocket open:", url)
+            } else if (socket.status === WebSocket.Closed) {
+                console.log("WebSocket closed")
+                socket.active = false
+            } else if (socket.status === WebSocket.Connecting) {
+                console.log("WebSocket connecting:", url)
+            }
+        }
+        active: true
+    }
+
+    function sendWsMessage(message) {
+        if (socket.status === WebSocket.Open) {
+            socket.sendTextMessage(message)
+        } else {
+            console.warn("sendWsMessage: socket not open")
+        }
+    }
+
+    function sendStationSnapshot() {
+        if (stationModel.count === 0) {
+            return
+        }
+
+        var stations = []
+        for (var i = 0; i < stationModel.count; i++) {
+            var item = stationModel.get(i)
+            stations.push({
+                stationId: item.stationId,
+                rssi: item.rssi,
+                proximity: item.proximity,
+                beaconIds: item.beaconIds
+            })
+        }
+
+        var payload = {
+            userId: settingsRef ? settingsRef.userID : 0,
+            userName: settingsRef ? settingsRef.userName : "",
+            timestamp: new Date().toISOString(),
+            strongestStation: strongestStation,
+            stations: stations
+        }
+
+        var message = JSON.stringify(payload)
+        console.log("WS OUT:", message)
+        sendWsMessage(message)
+    }
+
+    Timer {
+        id: wsBatchTimer
+        interval: 300
+        repeat: false
+        onTriggered: sendStationSnapshot()
+    }
 
     // --- Sound player (MP3) ---
     // Threshold -65 → sound3.mp3, -55 → sound2.mp3, -45 → sound1.mp3
@@ -84,6 +154,7 @@ Rectangle {
                 }
             }
             strongestStation = maxStationId;
+            wsBatchTimer.restart()
         }
     }
 
@@ -103,8 +174,8 @@ Rectangle {
 
             Label {
                 id: statusLabel
-                text: qsTr("Connected: ") + (socket.active ? qsTr("YES") : qsTr("NO"))
-                      + " | " + qsTr("Strongest station: ") + strongestStation;
+                text: qsTr("Connected: ") + (socket.status === WebSocket.Open ? qsTr("YES") : qsTr("NO"))
+                      + " | " + qsTr("Strongest station: ") + strongestStation
             }
         }
 
@@ -135,7 +206,7 @@ Rectangle {
                     color: Qt.hsla(model.stationId * 0.1618, 0.7, 0.5, 1)
                     Layout.fillWidth: true
                     notationImageRef: notationImage
-                    // strongestStation: mainView.strongestStation
+                    //strongestStation: mainView.strongestStation
                 }
             }
         }

@@ -11,6 +11,7 @@ Rectangle {
     property alias serverIP:  serverIPTextField.text
     property alias serverPort: serverPortSpinBox.value
     property alias connectButton: connectButton
+    property var socketRef: null
 
     gradient: Gradient {
         GradientStop { position: 0.0; color: Material.backgroundColor }
@@ -85,9 +86,14 @@ Rectangle {
 
             Button {
                 id: connectButton
-                text: socket.status === WebSocket.Open ?  qsTr("Connected")  :  ( socket.status === WebSocket.Connecting ? qsTr("Connecting...") :  qsTr("Connect") )
-                enabled: socket.status !== WebSocket.Open
-                onClicked: socket.active = true
+                text: !socketRef ? qsTr("Connect")
+                                 : (socketRef.status === WebSocket.Open ? qsTr("Connected")
+                                   : (socketRef.status === WebSocket.Connecting ? qsTr("Connecting...") : qsTr("Connect")))
+                enabled: socketRef && socketRef.status !== WebSocket.Open
+                onClicked: {
+                    if (socketRef)
+                        socketRef.active = true
+                }
             }
         }
 

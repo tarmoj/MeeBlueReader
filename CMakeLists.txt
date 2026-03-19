@@ -31,7 +31,7 @@ else()
     list(APPEND SOURCES ibeaconscanner_linux.cpp)
 endif()
 
-set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTORCC ON) #NB! without this resources are not included
 
 qt_add_executable(appMeeBlueReader
     ${SOURCES}
