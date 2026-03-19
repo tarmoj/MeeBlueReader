@@ -82,6 +82,45 @@ Rectangle {
         sendWsMessage(message)
     }
 
+
+    // FOR TESING ONLY
+    function rssiToProximity(rssi) {
+        if (rssi >= -50) return "Immediate"
+        if (rssi >= -65) return "Near"
+        return "Far"
+    }
+
+    function sendTestInfo() {
+        var stationIds = [1, 2, 3]
+        var stations = []
+        var maxRssi = -999
+        var strongestId = stationIds[0]
+
+        for (var i = 0; i < stationIds.length; i++) {
+            var rssi = Math.round(-80 + Math.random() * 50)  // -80 .. -30
+            if (rssi > maxRssi) {
+                maxRssi = rssi
+                strongestId = stationIds[i]
+            }
+            stations.push({
+                stationId: stationIds[i],
+                rssi: rssi,
+                proximity: rssiToProximity(rssi)
+            })
+        }
+
+        var payload = {
+            userId: settingsRef ? settingsRef.userID : 0,
+            userName: settingsRef ? settingsRef.userName : "Test",
+            timestamp: new Date().toISOString(),
+            strongestStation: strongestId,
+            stations: stations
+        }
+        var message = JSON.stringify(payload)
+        console.log("WS TEST OUT:", message)
+        sendWsMessage(message)
+    }
+
     Timer {
         id: wsBatchTimer
         interval: 300
@@ -176,6 +215,11 @@ Rectangle {
                 id: statusLabel
                 text: qsTr("Connected: ") + (socket.status === WebSocket.Open ? qsTr("YES") : qsTr("NO"))
                       + " | " + qsTr("Strongest station: ") + strongestStation
+            }
+
+            Button {
+                text: qsTr("Send test info")
+                onClicked: sendTestInfo()
             }
         }
 
