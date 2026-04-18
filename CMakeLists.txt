@@ -4,7 +4,7 @@ project(MeeBlueReader VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Bluetooth Core Gui Multimedia Quick WebSockets CorePrivate)
+find_package(Qt6 REQUIRED COMPONENTS Bluetooth Core Gui Multimedia Network Quick WebSockets CorePrivate)
 
 
 qt_standard_project_setup(REQUIRES 6.9)
@@ -17,6 +17,8 @@ set(SOURCES
     meebluehelper.h
     meebluehelper.cpp
     ibeaconscanner.h  # cross-platform interface, always needed
+    filedownloader.h
+    filedownloader.cpp
 )
 
 # Add platform-specific IBeaconScanner implementation
@@ -83,6 +85,7 @@ target_link_libraries(appMeeBlueReader PUBLIC
     Qt::Core
     Qt::Gui
     Qt::Multimedia
+    Qt::Network
     Qt::Quick
     Qt::WebSockets
     Qt::CorePrivate

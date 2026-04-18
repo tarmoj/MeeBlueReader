@@ -11,6 +11,16 @@ Rectangle {
     height: 900
     property var settingsRef: null
     property alias wsSocket: socket
+    property var fileDownloaderRef: null
+
+    // Rules loaded from rules{N}.json.  Each element is a JS object matching the event schema.
+    property var eventRules: []
+
+    // Per-station tracking state: { stationId: { prevRssi, prevProximity, cooldowns: {name: ms} } }
+    property var _stationState: ({})
+
+    // Proximity ordering used for "in" / "out" matching
+    readonly property var _proxOrder: ({ "Unknown": 0, "Far": 1, "Near": 2, "Immediate": 3 })
 
     gradient: Gradient {
         GradientStop { position: 0.0; color: Material.backgroundColor }
@@ -54,7 +64,7 @@ Rectangle {
     }
 
     function sendStationSnapshot() {
-        if (stationModel.count === 0) {
+        if (stationModel.count === 0 || socket.status !== WebSocket.Open) {
             return
         }
 
@@ -78,7 +88,7 @@ Rectangle {
         }
 
         var message = JSON.stringify(payload)
-        console.log("WS OUT:", message)
+        //console.log("WS OUT:", message)
         sendWsMessage(message)
     }
 
@@ -128,25 +138,88 @@ Rectangle {
         onTriggered: sendStationSnapshot()
     }
 
-    // --- Sound player (MP3) ---
-    // Threshold -65 → sound3.mp3, -55 → sound2.mp3, -45 → sound1.mp3
+    // --- Sound / image player ---
     MediaPlayer {
         id: soundPlayer
         audioOutput: AudioOutput { volume: 1.0 }
     }
 
-    // Called by StationInfo when the strongest station crosses an RSSI threshold upward.
-    // threshold: -65, -55, or -45
-    function triggerSound(threshold) {
-        console.log("Triggering sound on: ", threshold)
-        if (threshold === -45) {
-            soundPlayer.source = "qrc:/sounds/sound1.mp3"
-        } else if (threshold === -55) {
-            soundPlayer.source = "qrc:/sounds/sound2.mp3"
-        } else if (threshold === -65) {
-            soundPlayer.source = "qrc:/sounds/sound3.mp3"
-        }
+    // Trigger sound from local data directory (file:// URL)
+    function triggerEventSound(fileName) {
+        if (!fileName || fileName === "" || fileDownloaderRef === null) return
+        const path = "file://" + fileDownloaderRef.localDataPath + "/sounds/" + fileName
+        console.log("triggerEventSound:", path)
+        soundPlayer.source = path
         soundPlayer.play()
+    }
+
+    // Show image from local data directory (file:// URL)
+    function triggerEventImage(fileName) {
+        if (!fileName || fileName === "" || fileDownloaderRef === null) return
+        const path = "file://" + fileDownloaderRef.localDataPath + "/images/" + fileName
+        console.log("triggerEventImage:", path)
+        notationImage.source = path
+    }
+
+    // Evaluate all rules against the current station update.
+    function evaluateEvents(stationId, rssi, proximity) {
+        if (eventRules.length === 0) return
+
+        const state = _stationState[stationId] || { prevRssi: -999, prevProximity: "Unknown", cooldowns: {} }
+        const prevRssi   = state.prevRssi
+        const prevProx   = state.prevProximity
+        const now        = Date.now()
+
+        for (let i = 0; i < eventRules.length; i++) {
+            const rule = eventRules[i]
+
+            // --- Station filter ---
+            const rStation = rule.station !== undefined ? parseInt(rule.station) : 0
+            if (rStation > 0 && rStation !== stationId) continue
+            if (rStation <= 0 && stationId !== strongestStation) continue
+
+            // --- RSSI threshold check ---
+            const rRssi = rule.rssi !== undefined ? parseInt(rule.rssi) : 0
+            if (rRssi !== 0) {
+                const dir = (rule.updDown || "up").toLowerCase()
+                const crossedUp   = rssi > rRssi && prevRssi <= rRssi
+                const crossedDown = rssi < rRssi && prevRssi >= rRssi
+                const matched = (dir === "up" && crossedUp) || (dir === "down" && crossedDown)
+                if (!matched) continue
+            }
+
+            // --- Proximity zone check ---
+            const rProx = (rule.proximity || "").trim()
+            if (rProx !== "") {
+                const inOut = (rule.inOut || "in").toLowerCase()
+                const curOrd  = _proxOrder[proximity]  !== undefined ? _proxOrder[proximity]  : 0
+                const prevOrd = _proxOrder[prevProx]   !== undefined ? _proxOrder[prevProx]   : 0
+                const rOrd    = _proxOrder[rProx]      !== undefined ? _proxOrder[rProx]      : 0
+                const enteredZone = curOrd >= rOrd && prevOrd < rOrd
+                const leftZone    = curOrd < rOrd  && prevOrd >= rOrd
+                const matched = (inOut === "in" && enteredZone) || (inOut === "out" && leftZone)
+                if (!matched) continue
+            }
+
+            // --- Retrigger cooldown ---
+            const cooldownMs = (rule.retriggerAllowedAfter !== undefined
+                                    ? parseFloat(rule.retriggerAllowedAfter) : 0) * 1000
+            const ruleName = rule.name || ("rule_" + i)
+            const lastFired = state.cooldowns[ruleName] || 0
+            if (cooldownMs > 0 && (now - lastFired) < cooldownMs) continue
+
+            // --- All conditions passed: trigger ---
+            console.log("Event triggered:", ruleName, "station", stationId)
+            triggerEventSound(rule.sound || "")
+            triggerEventImage(rule.image || "")
+
+            // Update cooldown timestamp (must re-read _stationState to avoid stale copy)
+            const updated = _stationState[stationId] || state
+            updated.cooldowns[ruleName] = now
+            const newState = Object.assign({}, _stationState)
+            newState[stationId] = updated
+            _stationState = newState
+        }
     }
 
     ListModel {
@@ -194,6 +267,18 @@ Rectangle {
             }
             strongestStation = maxStationId;
             wsBatchTimer.restart()
+
+            // Evaluate rules-based events; must happen after strongestStation is updated
+            // and before we write the new prev values.
+            evaluateEvents(stationId, rssi, proximity)
+
+            // Update previous-state tracking for this station
+            var st = Object.assign({}, _stationState)
+            var prev = st[stationId] || { prevRssi: -999, prevProximity: "Unknown", cooldowns: {} }
+            prev.prevRssi      = rssi
+            prev.prevProximity = proximity
+            st[stationId] = prev
+            _stationState = st
         }
     }
 

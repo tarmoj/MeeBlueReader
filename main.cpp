@@ -3,6 +3,7 @@
 #include <QQmlContext>
 
 #include "meebluereader.h"
+#include "filedownloader.h"
 
 #ifdef Q_OS_ANDROID
 #include <QPermission>        // Qt6 permission API
@@ -108,7 +109,10 @@ int main(int argc, char *argv[])
 #endif
 
     QQmlApplicationEngine engine;
-    
+
+    // Register FileDownloader so it can be instantiated from QML
+    qmlRegisterType<FileDownloader>("MeeBlueReader", 1, 0, "FileDownloader");
+
     // Create and register MeeBlueReader instance
     MeeBlueReader reader;
     engine.rootContext()->setContextProperty("meeBlueReader", &reader);

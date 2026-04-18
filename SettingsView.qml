@@ -6,12 +6,15 @@ import QtWebSockets
 Rectangle {
     id: settingsView
 
-    property alias userID:    idSpinBox.value
-    property alias userName:  nameTextField.text
-    property alias serverIP:  serverIPTextField.text
-    property alias serverPort: serverPortSpinBox.value
+    property alias userID:      idSpinBox.value
+    property alias userName:    nameTextField.text
+    property alias serverIP:    serverIPTextField.text
+    property alias serverPort:  serverPortSpinBox.value
     property alias connectButton: connectButton
+    property alias contentUrl:  contentUrlTextField.text
+    property alias selectedRules: rulesComboBox.currentIndex
     property var socketRef: null
+    property var fileDownloaderRef: null
 
     gradient: Gradient {
         GradientStop { position: 0.0; color: Material.backgroundColor }
@@ -95,6 +98,78 @@ Rectangle {
                         socketRef.active = true
                 }
             }
+        }
+
+
+
+        // ---- Content download section ----------------------------------------
+        Label {
+            text: qsTr("Content")
+            font.bold: true
+            font.pointSize: 14
+        }
+
+        Flow {
+            id: contentUrlRow
+            Layout.fillWidth: true
+            spacing: 5
+
+            Label {
+                height: contentUrlTextField.height
+                text: qsTr("Content URL:")
+                verticalAlignment: Text.AlignVCenter
+            }
+            TextField {
+                id: contentUrlTextField
+                width: 260
+                text: "https://tarmo.uuu.ee/meeblue"
+                placeholderText: qsTr("https://…")
+            }
+        }
+
+        RowLayout {
+            spacing: 10
+
+            Label {
+                text: qsTr("Rules file:")
+                verticalAlignment: Text.AlignVCenter
+            }
+            ComboBox {
+                id: rulesComboBox
+                model: ["rules1", "rules2", "rules3", "rules4"]
+            }
+
+            Button {
+                text: qsTr("Check && Download")
+                enabled: fileDownloaderRef !== null
+                onClicked: {
+                    if (fileDownloaderRef)
+                        fileDownloaderRef.checkAndDownload(contentUrlTextField.text,
+                                                           rulesComboBox.currentText)
+                }
+            }
+        }
+
+        Button {
+            id: refreshRulesButton
+            text: qsTr("Refresh rules")
+            onClicked: {
+                if (fileDownloaderRef)
+                    fileDownloaderRef.loadLocalRules(rulesComboBox.currentText)
+            }
+        }
+
+        Label {
+            id: downloadStatusLabel
+            text: ""
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+
+        Connections {
+            target: fileDownloaderRef
+            function onStatusMessage(msg)  { downloadStatusLabel.text = msg }
+            function onDownloadError(msg)  { downloadStatusLabel.text = qsTr("Error: ") + msg }
         }
 
         Item {Layout.fillHeight: true}

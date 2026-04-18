@@ -5,6 +5,7 @@ import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtCore
+import MeeBlueReader
 
 
 ApplicationWindow {
@@ -13,7 +14,7 @@ ApplicationWindow {
     height: 900
     minimumWidth: 350
     visible: true
-    property string version: "0.5.0"
+    property string version: "0.6.0"
     title: qsTr("MeeBlue Reader " + version)
     color: Material.background
 
@@ -23,11 +24,40 @@ ApplicationWindow {
     Settings {
         id: appSettings
 
-        property alias userID:    settingsView.userID
-        property alias userName:  settingsView.userName
-        property alias serverIP:  settingsView.serverIP
-        property alias serverPort: settingsView.serverPort
+        property alias userID:        settingsView.userID
+        property alias userName:      settingsView.userName
+        property alias serverIP:      settingsView.serverIP
+        property alias serverPort:    settingsView.serverPort
+        property alias contentUrl:    settingsView.contentUrl
+        property alias selectedRules: settingsView.selectedRules
+    }
 
+    // FileDownloader: downloads rules JSON + media files from configured URL.
+    FileDownloader {
+        id: fileDownloader
+
+        onRulesLoaded: function(rules) {
+            mainPage.eventRules = rules
+            console.log("FileDownloader: rulesLoaded, count =", rules.length)
+        }
+        onStatusMessage: function(msg) {
+            console.log("FileDownloader:", msg)
+        }
+        onDownloadError: function(msg) {
+            console.error("FileDownloader error:", msg)
+        }
+    }
+
+    Component.onCompleted: {
+        fileDownloader.loadLocalRules("rules" + (appSettings.selectedRules + 1))
+    }
+
+    // When the user changes the rules selection, reload the matching local file.
+    Connections {
+        target: settingsView
+        function onSelectedRulesChanged() {
+            fileDownloader.loadLocalRules("rules" + (settingsView.selectedRules + 1))
+        }
     }
 
     header: ToolBar {
@@ -135,11 +165,13 @@ Built using Qt framework.
         MainView {
             id: mainPage
             settingsRef: settingsView
+            fileDownloaderRef: fileDownloader
         }
 
         SettingsView {
             id: settingsView
             socketRef: mainPage.wsSocket
+            fileDownloaderRef: fileDownloader
         }
     }
 

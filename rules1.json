@@ -1,0 +1,68 @@
+[
+  {
+    "name": "enter-near-any",
+    "station": 0,
+    "proximity": "Near",
+    "inOut": "in",
+    "rssi": 0,
+    "updDown": "up",
+    "retriggerAllowedAfter": 15,
+    "sound": "sound2.mp3",
+    "image": ""
+  },
+  {
+    "name": "enter-immediate-any",
+    "station": 0,
+    "proximity": "Immediate",
+    "inOut": "in",
+    "rssi": 0,
+    "updDown": "up",
+    "retriggerAllowedAfter": 15,
+    "sound": "sound1.mp3",
+    "image": "1-immediate.png"
+  },
+  {
+    "name": "leave-near-any",
+    "station": 0,
+    "proximity": "Near",
+    "inOut": "out",
+    "rssi": 0,
+    "updDown": "up",
+    "retriggerAllowedAfter": 15,
+    "sound": "sound3.mp3",
+    "image": ""
+  },
+  {
+    "name": "close-rssi-station1",
+    "station": 1,
+    "proximity": "",
+    "inOut": "in",
+    "rssi": -50,
+    "updDown": "up",
+    "retriggerAllowedAfter": 20,
+    "sound": "sound1.mp3",
+    "image": "1-near.png"
+  },
+  {
+    "name": "moving-away-station2",
+    "station": 2,
+    "proximity": "",
+    "inOut": "out",
+    "rssi": -65,
+    "updDown": "down",
+    "retriggerAllowedAfter": 10,
+    "sound": "sound2.mp3",
+    "image": ""
+  },
+  {
+    "name": "immediate-station3",
+    "station": 3,
+    "proximity": "Immediate",
+    "inOut": "in",
+    "rssi": -45,
+    "updDown": "up",
+    "retriggerAllowedAfter": 30,
+    "sound": "sound1.mp3",
+    "image": "3-immediate.png"
+  }
+]
