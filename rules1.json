@@ -56,7 +56,7 @@
     "retriggerAllowedAfter": 5,
     "sound": "",
     "image": "",
-    "text" : "entered to -70..-60 dB"
+    "text" : "entered to station 2 -70..-60 dB"
   },
   
   {
@@ -69,7 +69,7 @@
     "retriggerAllowedAfter": 5,
     "sound": "",
     "image": "",
-    "text" : "-60"
+    "text" : "station 2 above -60"
   },
   
   {
@@ -82,7 +82,7 @@
     "retriggerAllowedAfter": 5,
     "sound": "",
     "image": "",
-    "text" : "less than -50 db"
+    "text" : "2 less than -50 db"
   },
   
   {
@@ -111,16 +111,42 @@
     "text" : ""
   },
   {
-    "name": "proximity-3-out",
+    "name": "proximity-3-out1",
+    "station": 3,
+    "proximity": "Immediate",
+    "inOut": "out",
+    "rssi": 0,
+    "updDown": "down",
+    "retriggerAllowedAfter": 5,
+    "sound": "",
+    "image": "",
+    "text" : "3 immediate out"
+  }, 
+  
+  {
+    "name": "proximity-3-out2",
     "station": 3,
     "proximity": "Near",
     "inOut": "out",
     "rssi": 0,
     "updDown": "down",
-    "retriggerAllowedAfter": 10,
+    "retriggerAllowedAfter": 5,
     "sound": "",
-    "image": "none",
-    "text" : "none"
+    "image": "",
+    "text" : "3 near out"
+  }, 
+  
+  {
+    "name": "proximity-3-out3",
+    "station": 3,
+    "proximity": "Far",
+    "inOut": "out",
+    "rssi": 0,
+    "updDown": "down",
+    "retriggerAllowedAfter": 5,
+    "sound": "",
+    "image": "",
+    "text" : "3 far out"
   }
   
   
