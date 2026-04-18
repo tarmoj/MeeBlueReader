@@ -153,12 +153,31 @@ Rectangle {
         soundPlayer.play()
     }
 
-    // Show image from local data directory (file:// URL)
+    // Show image from local data directory (file:// URL).
+    // Pass "none" to clear the current image without showing a new one.
     function triggerEventImage(fileName) {
-        if (!fileName || fileName === "" || fileDownloaderRef === null) return
+        if (!fileName || fileName === "") return
+        if (fileName.toLowerCase() === "none") {
+            notationImage.source = ""
+            return
+        }
+        if (fileDownloaderRef === null) return
         const path = "file://" + fileDownloaderRef.localDataPath + "/images/" + fileName
         console.log("triggerEventImage:", path)
+        eventText.text = ""
         notationImage.source = path
+    }
+
+    // Display a text message in the content area.
+    // Pass "none" to clear the current text without showing a new one.
+    function triggerEventText(msg) {
+        if (!msg || msg === "") return
+        if (msg.toLowerCase() === "none") {
+            eventText.text = ""
+            return
+        }
+        notationImage.source = ""
+        eventText.text = msg
     }
 
     // Evaluate all rules against the current station update.
@@ -211,7 +230,10 @@ Rectangle {
             // --- All conditions passed: trigger ---
             console.log("Event triggered:", ruleName, "station", stationId)
             triggerEventSound(rule.sound || "")
-            triggerEventImage(rule.image || "")
+            if (rule.text && rule.text !== "")
+                triggerEventText(rule.text)
+            else
+                triggerEventImage(rule.image || "")
 
             // Update cooldown timestamp (must re-read _stationState to avoid stale copy)
             const updated = _stationState[stationId] || state
@@ -348,13 +370,38 @@ Rectangle {
             color: "transparent"
             border.color: Material.dividerColor
 
+            ToolButton {
+                id: clearButton
+                anchors.right: parent.right
+                anchors.margins: 5
+                anchors.top: parent.top
+                text: qsTr("Clear")
+                onClicked: {
+                    notationImage.source = ""
+                    eventText.text = ""
+                }
+            }
+
             Image {
                 id: notationImage
                 anchors.centerIn: parent
                 width: parent.width * 0.8
+                height: Math.min(implicitHeight, contentArea.height)
                 fillMode: Image.PreserveAspectFit
+                source: ""
+            }
 
-                source: "" //"qrc:/images/notation/1-immediate.png"
+            Label {
+                id: eventText
+                anchors.centerIn: parent
+                width: parent.width * 0.9
+                text: ""
+                visible: text !== ""
+                font.pointSize: 32
+                font.bold: true
+                //color: "white"
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
             }
 
         }

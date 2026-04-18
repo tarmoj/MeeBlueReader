@@ -1,68 +1,130 @@
 [
   {
-    "name": "enter-near-any",
-    "station": 0,
-    "proximity": "Near",
-    "inOut": "in",
-    "rssi": 0,
-    "updDown": "up",
-    "retriggerAllowedAfter": 15,
-    "sound": "sound2.mp3",
-    "image": ""
-  },
-  {
-    "name": "enter-immediate-any",
-    "station": 0,
-    "proximity": "Immediate",
-    "inOut": "in",
-    "rssi": 0,
-    "updDown": "up",
-    "retriggerAllowedAfter": 15,
-    "sound": "sound1.mp3",
-    "image": "1-immediate.png"
-  },
-  {
-    "name": "leave-near-any",
-    "station": 0,
-    "proximity": "Near",
-    "inOut": "out",
-    "rssi": 0,
-    "updDown": "up",
-    "retriggerAllowedAfter": 15,
-    "sound": "sound3.mp3",
-    "image": ""
-  },
-  {
-    "name": "close-rssi-station1",
+    "name": "enter-immediater-1",
     "station": 1,
     "proximity": "",
     "inOut": "in",
-    "rssi": -50,
+    "rssi": -55,
     "updDown": "up",
-    "retriggerAllowedAfter": 20,
+    "retriggerAllowedAfter": 10,
     "sound": "sound1.mp3",
-    "image": "1-near.png"
+    "image": ""
   },
-  {
-    "name": "moving-away-station2",
+   {
+    "name": "enter-immediate-2",
     "station": 2,
     "proximity": "",
-    "inOut": "out",
-    "rssi": -65,
-    "updDown": "down",
+    "inOut": "in",
+    "rssi": -55,
+    "updDown": "up",
     "retriggerAllowedAfter": 10,
     "sound": "sound2.mp3",
     "image": ""
   },
+   {
+    "name": "enter-immediater-3",
+    "station": 3,
+    "proximity": "",
+    "inOut": "in",
+    "rssi": -55,
+    "updDown": "up",
+    "retriggerAllowedAfter": 10,
+    "sound": "sound3.mp3",
+    "image": ""
+  },
+  
   {
-    "name": "immediate-station3",
+    "name": "rssi-test-with-text",
+    "station": 2,
+    "proximity": "",
+    "inOut": "in",
+    "rssi": -70,
+    "updDown": "up",
+    "retriggerAllowedAfter": 5,
+    "sound": "",
+    "image": "",
+    "text" : "entered to -70..-60 dB"
+  },
+  
+  {
+    "name": "rssi-test-with-text",
+    "station": 2,
+    "proximity": "",
+    "inOut": "in",
+    "rssi": -60,
+    "updDown": "down",
+    "retriggerAllowedAfter": 5,
+    "sound": "",
+    "image": "",
+    "text" : "entered to -70..-60 dB"
+  },
+  
+  {
+    "name": "rssi-test-with-text2",
+    "station": 2,
+    "proximity": "",
+    "inOut": "in",
+    "rssi": -60,
+    "updDown": "up",
+    "retriggerAllowedAfter": 5,
+    "sound": "",
+    "image": "",
+    "text" : "-60"
+  },
+  
+  {
+    "name": "rssi-test-with-text3",
+    "station": 2,
+    "proximity": "",
+    "inOut": "in",
+    "rssi": -50,
+    "updDown": "up",
+    "retriggerAllowedAfter": 5,
+    "sound": "",
+    "image": "",
+    "text" : "less than -50 db"
+  },
+  
+  {
+    "name": "rssi-2-out",
+    "station": 2,
+    "proximity": "",
+    "inOut": "in",
+    "rssi": -70,
+    "updDown": "down",
+    "retriggerAllowedAfter": 10,
+    "sound": "",
+    "image": "none",
+    "text" : "none"
+  },
+  
+  {
+    "name": "proximity-3-image",
     "station": 3,
     "proximity": "Immediate",
     "inOut": "in",
-    "rssi": -45,
-    "updDown": "up",
-    "retriggerAllowedAfter": 30,
-    "sound": "sound1.mp3",
-    "image": "3-immediate.png"
+    "rssi": 0,
+    "updDown": "down",
+    "retriggerAllowedAfter": 10,
+    "sound": "",
+    "image": "3-immediate.png",
+    "text" : ""
+  },
+  {
+    "name": "proximity-3-out",
+    "station": 3,
+    "proximity": "Near",
+    "inOut": "out",
+    "rssi": 0,
+    "updDown": "down",
+    "retriggerAllowedAfter": 10,
+    "sound": "",
+    "image": "none",
+    "text" : "none"
   }
+  
+  
+  
+  
+  
 ]
