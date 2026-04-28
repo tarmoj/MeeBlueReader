@@ -100,6 +100,11 @@ void Station::update(const QList<BeaconInfo> &beacons)
     
     if (!beacon1 && !beacon2) {
         qDebug() << "Station" << m_id << ": No beacons found";
+        m_previousAverage = 0.0;
+        QString beaconIds = QString("%1:%2, %3:%4")
+                                .arg(m_major1).arg(m_minor1)
+                                .arg(m_major2).arg(m_minor2);
+        emit stationUpdated(m_id, 0, "Unknown", beaconIds);
         return;
     }
     
@@ -184,7 +189,11 @@ void Station::update(const QList<BeaconInfo> &beacons)
     
     // Calculate average from valid readings
     if (validRssiValues.isEmpty()) {
-        //qDebug() << "Station" << m_id << "All readings rejected, keeping previous average";
+        m_previousAverage = 0.0;
+        QString beaconIds = QString("%1:%2, %3:%4")
+                                .arg(m_major1).arg(m_minor1)
+                                .arg(m_major2).arg(m_minor2);
+        emit stationUpdated(m_id, 0, "Unknown", beaconIds);
         return;
     }
     

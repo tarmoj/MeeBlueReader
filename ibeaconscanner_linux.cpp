@@ -7,6 +7,7 @@
 #include "meebluehelper.h"
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
+#include <QDateTime>
 #include <QMap>
 #include <QTimer>
 #include <QVariantList>
@@ -138,6 +139,7 @@ private slots:
             info.rssi      = rssi;
             info.proximity = proximityFromRSSI(rssi);
             m_latestBeacons[key] = info;
+            m_lastSeen[key] = QDateTime::currentMSecsSinceEpoch();
 
             // qDebug() << "iBeacon:" << uuid
             //          << "major:" << major << "minor:" << minor
@@ -159,6 +161,20 @@ private slots:
     // Called every second: smooth each beacon's RSSI and push a QVariantList to IBeaconScanner
     void emitBeacons()
     {
+        // Prune beacons not seen within the last 4 seconds
+        const qint64 now   = QDateTime::currentMSecsSinceEpoch();
+        const qint64 ttlMs = 4000;
+        QList<QString> staleKeys;
+        for (auto it = m_lastSeen.cbegin(); it != m_lastSeen.cend(); ++it) {
+            if (now - it.value() > ttlMs)
+                staleKeys.append(it.key());
+        }
+        for (const QString &k : staleKeys) {
+            m_latestBeacons.remove(k);
+            m_rssiHistory.remove(k);
+            m_lastSeen.remove(k);
+        }
+
         if (m_latestBeacons.isEmpty()) return;
 
         QVariantList qtBeacons;
@@ -191,6 +207,7 @@ private:
 
     QMap<QString, QList<int>>  m_rssiHistory;   // key -> rolling RSSI buffer
     QMap<QString, BeaconInfo>  m_latestBeacons; // key -> last seen BeaconInfo
+    QMap<QString, qint64>      m_lastSeen;       // key -> ms timestamp of last advertisement
 };
 
 // Pull in the MOC-generated code for the class defined above
