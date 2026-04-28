@@ -318,10 +318,18 @@ Rectangle {
             id: statusRow
             spacing: 10
 
+            Button {
+                text: socket.status === WebSocket.Open ? qsTr("Connected")
+                      : (socket.status === WebSocket.Connecting ? qsTr("Connecting...") : qsTr("Connect"))
+                enabled: socket.status !== WebSocket.Open
+                onClicked: {
+                    socket.active = true
+                }
+            }
+
             Label {
                 id: statusLabel
-                text: qsTr("Connected: ") + (socket.status === WebSocket.Open ? qsTr("YES") : qsTr("NO"))
-                      + " | " + qsTr("Strongest station: ") + strongestStation
+                text: qsTr("Strongest station: ") + strongestStation
             }
 
             Button {
