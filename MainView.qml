@@ -100,14 +100,15 @@ Rectangle {
         return "Far"
     }
 
-    function sendTestInfo() {
+    function sendTestInfo(sendZeros=false)  {
         var stationIds = [1, 2, 3]
         var stations = []
         var maxRssi = -999
         var strongestId = stationIds[0]
 
         for (var i = 0; i < stationIds.length; i++) {
-            var rssi = Math.round(-80 + Math.random() * 50)  // -80 .. -30
+
+            var rssi = sendZeros ? 0 : Math.round(-80 + Math.random() * 50)  // -80 .. -30
             if (rssi > maxRssi) {
                 maxRssi = rssi
                 strongestId = stationIds[i]
@@ -334,7 +335,12 @@ Rectangle {
 
             Button {
                 text: qsTr("Send test info")
-                onClicked: sendTestInfo()
+                onClicked: sendTestInfo(zerosCheck.checked)
+            }
+
+            CheckBox {
+                id: zerosCheck
+                text: qsTr("Send zeros")
             }
         }
 
