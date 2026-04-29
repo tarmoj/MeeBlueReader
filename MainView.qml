@@ -55,6 +55,19 @@ Rectangle {
         active: true
     }
 
+    Connections {
+        target: Qt.application
+        function onStateChanged() {
+            if (Qt.application.state === Qt.ApplicationSuspended) {
+                console.log("App suspended — closing WebSocket")
+                socket.active = false
+            } else if (Qt.application.state === Qt.ApplicationActive) {
+                console.log("App active — opening WebSocket")
+                socket.active = true
+            }
+        }
+    }
+
     function sendWsMessage(message) {
         if (socket.status === WebSocket.Open) {
             socket.sendTextMessage(message)
