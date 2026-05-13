@@ -21,6 +21,10 @@ MeeBlueReader::MeeBlueReader(QObject *parent)
     // Add more stations as needed
     m_stations.append(new Station(2, 1, 3, 1, 4, this));
     m_stations.append(new Station(3, 1, 5, 1, 6, this));
+
+    m_stations.append(new Station(4, 1, 7, 1, 8, this));
+    m_stations.append(new Station(5, 1, 9, 1, 10, this));
+    m_stations.append(new Station(6, 1, 11, 1, 12, this));
     
     // Connect station signals to our signal
     for (Station *station : m_stations) {
