@@ -56,6 +56,14 @@ void MeeBlueReader::stopScanning()
     m_scanner->stopScanning();
 }
 
+void MeeBlueReader::resetReadings()
+{
+    qDebug() << "MeeBlueReader::resetReadings()";
+    for (Station *station : m_stations) {
+        station->reset();
+    }
+}
+
 void MeeBlueReader::update(const QList<BeaconInfo> &beacons)
 {
     // Store the latest beacon information
@@ -296,4 +304,15 @@ Proximity Station::intToProximity(int val)
     if (val == 2) return Proximity::Near;
     if (val == 3) return Proximity::Far;
     return Proximity::Unknown;
+}
+
+void Station::reset()
+{
+    m_rssiHistory.clear();
+    m_previousAverage = 0.0;
+    qDebug() << "Station" << m_id << "reset";
+    QString beaconIds = QString("%1:%2, %3:%4")
+                            .arg(m_major1).arg(m_minor1)
+                            .arg(m_major2).arg(m_minor2);
+    emit stationUpdated(m_id, 0, "Unknown", beaconIds);
 }

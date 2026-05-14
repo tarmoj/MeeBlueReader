@@ -355,6 +355,15 @@ Rectangle {
                 id: zerosCheck
                 text: qsTr("Send zeros")
             }
+
+            Button {
+                text: qsTr("Reset")
+                onClicked: {
+                    meeBlueReader.resetReadings()
+                    stationModel.clear()
+                    _stationState = ({})
+                }
+            }
         }
 
 

@@ -26,6 +26,9 @@ public slots:
     void startScanning();
     void stopScanning();
 
+    // Reset all station and beacon readings
+    void resetReadings();
+
 signals:
     // Emitted when station info is updated (id, rssi, proximity, major1:minor1, major2:minor2)
     void newStationInfo(int stationId, int rssi, QString proximity, QString beaconIds);
@@ -51,6 +54,9 @@ public:
     
     // Update station with current beacon data
     void update(const QList<BeaconInfo> &beacons);
+
+    // Reset RSSI history and emit zeroed-out state
+    void reset();
     
     int id() const { return m_id; }
     
