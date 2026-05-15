@@ -92,11 +92,6 @@
     satisfyingConstraint:(CLBeaconIdentityConstraint *)constraint {
     
     if (beacons.count == 0) {
-        if (_qtScanner) {
-            QMetaObject::invokeMethod(_qtScanner, "updateBeacons",
-                                      Qt::QueuedConnection,
-                                      Q_ARG(QVariantList, QVariantList()));
-        }
         return;
     }
     

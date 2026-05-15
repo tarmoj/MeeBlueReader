@@ -11,11 +11,11 @@ Item {
     property int rssi: 0
     property string proximity: "Unknown"
     property color color: "green"
-    property double level: proximity === "Unknown" ? 0 : rssiToLevel(rssi)
+    property double level:  rssiToLevel(rssi)
     property var notationImageRef: null
 
     function rssiToLevel(rssi) {
-        if (rssi === undefined || rssi >= 0 || rssi <= -80) return 0;
+        if (rssi <= -80) return 0;
         if (rssi >= -40) return 1;
         return (rssi + 80) / 40;
     }
