@@ -95,7 +95,7 @@ Rectangle {
                 enabled: socketRef && socketRef.status !== WebSocket.Open
                 onClicked: {
                     if (socketRef) {
-                        if (socsocketRef.status === WebSocket.Connecting) { // disconnect if clicked on connecting state
+                        if (socketRef.status === WebSocket.Connecting) { // disconnect if clicked on connecting state
                             socketRef.active = false
                         } else {
                             socketRef.active = true
