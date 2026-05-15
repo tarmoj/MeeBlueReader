@@ -94,8 +94,13 @@ Rectangle {
                                    : (socketRef.status === WebSocket.Connecting ? qsTr("Connecting...") : qsTr("Connect")))
                 enabled: socketRef && socketRef.status !== WebSocket.Open
                 onClicked: {
-                    if (socketRef)
-                        socketRef.active = true
+                    if (socketRef) {
+                        if (socsocketRef.status === WebSocket.Connecting) { // disconnect if clicked on connecting state
+                            socketRef.active = false
+                        } else {
+                            socketRef.active = true
+                        }
+                    }
                 }
             }
         }

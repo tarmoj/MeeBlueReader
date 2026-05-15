@@ -157,7 +157,6 @@ Built using Qt framework.
     }
 
 
-
     SwipeView {
         id: swipeView
         anchors.fill: parent

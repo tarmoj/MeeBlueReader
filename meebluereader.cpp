@@ -111,7 +111,7 @@ void Station::update(const QList<BeaconInfo> &beacons)
     }
     
     if (!beacon1 && !beacon2) {
-        qDebug() << "Station" << m_id << ": No beacons found";
+        // qDebug() << "Station" << m_id << ": No beacons found";
         return;
     }
     

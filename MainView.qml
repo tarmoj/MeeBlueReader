@@ -328,7 +328,7 @@ Rectangle {
         anchors.margins: 10
         spacing: 10
 
-        RowLayout {
+        Flow {
             id: statusRow
             spacing: 10
 
@@ -337,13 +337,19 @@ Rectangle {
                       : (socket.status === WebSocket.Connecting ? qsTr("Connecting...") : qsTr("Connect"))
                 enabled: socket.status !== WebSocket.Open
                 onClicked: {
+                    if (socket.status === WebSocket.Connecting) { // disconnect if clicked on connecting state
+                        socket.active = false
+                        return;
+                    }
                     socket.active = true
                 }
             }
 
             Label {
                 id: statusLabel
+                height: zerosCheck.height
                 text: qsTr("Strongest station: ") + strongestStation
+                verticalAlignment: Text.AlignVCenter
             }
 
             Button {
