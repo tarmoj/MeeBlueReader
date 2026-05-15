@@ -63,6 +63,15 @@
         <string>bluetooth-peripheral</string>
     </array>
 
+    <!-- Network permissions -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This app needs local network access to connect to the server.</string>
+
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_http._tcp</string>
+    </array>
+
     <!-- Qt-specific keys -->
     <key>NSHighResolutionCapable</key>
     <true/>
