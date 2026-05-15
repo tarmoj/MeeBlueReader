@@ -110,7 +110,9 @@
         beaconMap["minor"] = [beacon.minor intValue];
         
         // RSSI value (raw, smoothing will be done in Station class)
-        beaconMap["rssi"] = (int)beacon.rssi;
+        int rssiVal = (int)beacon.rssi;
+        if (rssiVal == 0) rssiVal = -100;
+        beaconMap["rssi"] = rssiVal;
         
         // Proximity as string
         NSString *proximityStr;

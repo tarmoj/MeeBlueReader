@@ -119,6 +119,7 @@ private slots:
             // qint8 txPower = (qint8)data[22]; // could be used in distance estimation
 
             int rssi = device.rssi();
+            if (rssi == 0) rssi = -100;
 
             // Key uniquely identifies one beacon
             QString key = uuid + ":" + QString::number(major) + ":" + QString::number(minor);

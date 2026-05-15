@@ -14,7 +14,7 @@ ApplicationWindow {
     height: 900
     minimumWidth: 350
     visible: true
-    property string version: "0.6.5"
+    property string version: "0.6.5d"
     title: qsTr("MeeBlue Reader " + version)
     color: Material.background
 
