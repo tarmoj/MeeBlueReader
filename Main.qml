@@ -14,7 +14,7 @@ ApplicationWindow {
     height: 900
     minimumWidth: 350
     visible: true
-    property string version: "0.7.0"
+    property string version: Qt.application.version
     title: qsTr("Me Tulime " + version)
     color: Material.background
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(MeeBlueReader VERSION 0.1 LANGUAGES CXX)
+project(MeeBlueReader VERSION 0.7.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -75,10 +75,21 @@ qt_add_resources(appMeeBlueReader "conf"
 set_target_properties(appMeeBlueReader PROPERTIES
 #    MACOSX_BUNDLE_GUI_IDENTIFIER com.example.appMeeBlueReader
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
+
+target_compile_definitions(appMeeBlueReader PRIVATE APP_VERSION="${PROJECT_VERSION}")
+
+if (ANDROID)
+    # androiddeployqt writes these into android:versionName / android:versionCode.
+    # versionCode must be a strictly increasing integer, so derive it from MAJOR/MINOR/PATCH.
+    set_property(TARGET appMeeBlueReader PROPERTY QT_ANDROID_VERSION_NAME ${PROJECT_VERSION})
+    math(EXPR METULIME_ANDROID_VERSION_CODE
+        "${PROJECT_VERSION_MAJOR} * 1000000 + ${PROJECT_VERSION_MINOR} * 1000 + ${PROJECT_VERSION_PATCH}")
+    set_property(TARGET appMeeBlueReader PROPERTY QT_ANDROID_VERSION_CODE ${METULIME_ANDROID_VERSION_CODE})
+endif()
 
 target_link_libraries(appMeeBlueReader PUBLIC
     Qt::Bluetooth
@@ -115,6 +126,8 @@ if (APPLE)
         )
         set_target_properties(appMeeBlueReader PROPERTIES
             XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
+            XCODE_ATTRIBUTE_MARKETING_VERSION ${PROJECT_VERSION}
+            XCODE_ATTRIBUTE_CURRENT_PROJECT_VERSION ${PROJECT_VERSION}
         )
 
         # Launch screen storyboard

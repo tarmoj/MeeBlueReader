@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
     app.setOrganizationName("Tarmo Johannes Events and Software");
     app.setOrganizationDomain("meeblue-reader.org");
     app.setApplicationName("MeeBlue Reader");
+    app.setApplicationVersion(QStringLiteral(APP_VERSION));
 
 
 #ifdef Q_OS_ANDROID

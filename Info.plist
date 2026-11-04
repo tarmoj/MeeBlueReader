@@ -16,9 +16,9 @@
     <key>CFBundleIdentifier</key>
     <string>org.tarmoj.meeblue</string>
     <key>CFBundleVersion</key>
-    <string>4.12</string>
+    <string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.4.1</string>
+    <string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
     <key>CFBundleExecutable</key>
     <string>appMeeBlueReader</string>
     <key>CFBundlePackageType</key>
