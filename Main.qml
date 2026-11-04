@@ -24,7 +24,6 @@ ApplicationWindow {
     Settings {
         id: appSettings
 
-        property alias userID:        settingsView.userID
         property alias userName:      settingsView.userName
         property alias serverIP:      settingsView.serverIP
         property alias serverPort:    settingsView.serverPort

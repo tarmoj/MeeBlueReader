@@ -93,7 +93,7 @@ Rectangle {
         }
 
         var payload = {
-            userId: settingsRef ? settingsRef.userID : 0,
+            userId: settingsRef ? settingsRef.userID : "",
             userName: settingsRef ? settingsRef.userName : "",
             timestamp: new Date().toISOString(),
             strongestStation: strongestStation,
@@ -134,7 +134,7 @@ Rectangle {
         }
 
         var payload = {
-            userId: settingsRef ? settingsRef.userID : 0,
+            userId: settingsRef ? settingsRef.userID : "",
             userName: settingsRef ? settingsRef.userName : "Test",
             timestamp: new Date().toISOString(),
             strongestStation: strongestId,

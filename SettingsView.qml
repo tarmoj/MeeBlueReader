@@ -6,7 +6,7 @@ import QtWebSockets
 Rectangle {
     id: settingsView
 
-    property alias userID:      idSpinBox.value
+    readonly property string userID: userUid  // generated once in main.cpp, stored in QSettings
     property alias userName:    nameTextField.text
     property alias serverIP:    serverIPTextField.text
     property alias serverPort:  serverPortSpinBox.value
@@ -40,13 +40,6 @@ Rectangle {
             id: nameRow
             spacing: 5
 
-            Label { text: qsTr("ID:") }
-            SpinBox {
-                id: idSpinBox
-                from: 1
-                to: 25
-            }
-            Item { Layout.preferredWidth: 20 }
             Label { text: qsTr("Name:") }
             TextField {
                 id: nameTextField

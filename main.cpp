@@ -1,6 +1,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QSettings>
+#include <QUuid>
 
 #include "meebluereader.h"
 #include "filedownloader.h"
@@ -113,6 +115,15 @@ int main(int argc, char *argv[])
 
     // Register FileDownloader so it can be instantiated from QML
     qmlRegisterType<FileDownloader>("MeeBlueReader", 1, 0, "FileDownloader");
+
+    // Persistent unique user ID: generated on first launch, then read from settings.
+    QSettings settings;
+    QString userUid = settings.value("userUid").toString();
+    if (userUid.isEmpty()) {
+        userUid = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        settings.setValue("userUid", userUid);
+    }
+    engine.rootContext()->setContextProperty("userUid", userUid);
 
     // Create and register MeeBlueReader instance
     MeeBlueReader reader;
