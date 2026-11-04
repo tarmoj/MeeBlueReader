@@ -15,7 +15,7 @@ ApplicationWindow {
     minimumWidth: 350
     visible: true
     property string version: "0.6.6"
-    title: qsTr("MeeBlue Reader " + version)
+    title: qsTr("MeTulime " + version)
     color: Material.background
 
     flags: Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
@@ -141,7 +141,7 @@ ApplicationWindow {
         buttons: MessageDialog.Ok
 
         text: qsTr(`
-MeeBlue Reader
+MeTulime
 
 More info comes here.
 Built using Qt framework.

@@ -96,7 +96,7 @@ include(GNUInstallDirs)
 if (APPLE)
 
     set(MACOSX_BUNDLE_GUI_IDENTIFIER "org.tarmoj.meeblue")
-    set(MACOSX_BUNDLE_BUNDLE_NAME "Meeblue Reader")
+    set(MACOSX_BUNDLE_BUNDLE_NAME "MeTulime")
 
     set_target_properties(appMeeBlueReader PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Info.plist"

@@ -10,9 +10,9 @@
 
     <!-- Basic App Information -->
     <key>CFBundleDisplayName</key>
-    <string>MeeBlueReader</string>
+    <string>MeTulime</string>
     <key>CFBundleName</key>
-    <string>MeeBlueReader</string>
+    <string>MeTulime</string>
     <key>CFBundleIdentifier</key>
     <string>org.tarmoj.meeblue</string>
     <key>CFBundleVersion</key>
@@ -48,13 +48,13 @@
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>This app uses Bluetooth to discover and connect to nearby Meeblue beacons.</string>
     <key>NSBluetoothPeripheralUsageDescription</key>
-    <string>MeeBlueReader needs Bluetooth access to communicate with nearby devices.</string>
+    <string>MeTulime needs Bluetooth access to communicate with nearby devices.</string>
 
     <!-- Location Permissions (required for iBeacon ranging) -->
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>MeeBlueReader needs location access to detect and range iBeacons.</string>
+    <string>MeTulime needs location access to detect and range iBeacons.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>MeeBlueReader needs location access to detect and range iBeacons in the background.</string>
+    <string>MeTulime needs location access to detect and range iBeacons in the background.</string>
 
     <!-- (Optional) Background modes for BLE scanning -->
     <key>UIBackgroundModes</key>
