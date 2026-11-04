@@ -14,8 +14,8 @@ ApplicationWindow {
     height: 900
     minimumWidth: 350
     visible: true
-    property string version: "0.6.6"
-    title: qsTr("MeTulime " + version)
+    property string version: "0.7.0"
+    title: qsTr("Me Tulime " + version)
     color: Material.background
 
     flags: Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
