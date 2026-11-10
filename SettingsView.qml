@@ -71,6 +71,7 @@ Rectangle {
             }
             SpinBox {
                 id: serverPortSpinBox
+                enabled: false
                 width: 80
                 up.indicator:   Item { width: 0 }
                 down.indicator: Item { width: 0 }
@@ -120,8 +121,8 @@ Rectangle {
             TextField {
                 id: contentUrlTextField
                 width: 260
-                text: "https://tarmo.uuu.ee/meeblue"
-                placeholderText: qsTr("https://…")
+                text: "http://192.168.1.200/meeblue" // "https://tarmo.uuu.ee/meeblue"
+                placeholderText: qsTr("http://…")
             }
         }
 

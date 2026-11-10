@@ -352,22 +352,26 @@ Rectangle {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            Button {
-                text: qsTr("Send test info")
-                onClicked: sendTestInfo(zerosCheck.checked)
-            }
+            Item {
+                visible: false
 
-            CheckBox {
-                id: zerosCheck
-                text: qsTr("Send zeros")
-            }
+                Button {
+                    text: qsTr("Send test info")
+                    onClicked: sendTestInfo(zerosCheck.checked)
+                }
 
-            Button {
-                text: qsTr("Reset")
-                onClicked: {
-                    meeBlueReader.resetReadings()
-                    stationModel.clear()
-                    _stationState = ({})
+                CheckBox {
+                    id: zerosCheck
+                    text: qsTr("Send zeros")
+                }
+
+                Button {
+                    text: qsTr("Reset")
+                    onClicked: {
+                        meeBlueReader.resetReadings()
+                        stationModel.clear()
+                        _stationState = ({})
+                    }
                 }
             }
         }
