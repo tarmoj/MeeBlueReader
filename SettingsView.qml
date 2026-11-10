@@ -77,7 +77,7 @@ Rectangle {
                 down.indicator: Item { width: 0 }
                 from: 1024
                 to: 65535
-                editable: true
+                editable: false
                 value: 6789
             }
 
@@ -90,6 +90,7 @@ Rectangle {
                 onClicked: {
                     if (socketRef) {
                         if (socketRef.status === WebSocket.Connecting) { // disconnect if clicked on connecting state
+                            socketRef.wasConnected = false // user cancelled: no auto-reconnect
                             socketRef.active = false
                         } else {
                             socketRef.active = true
@@ -121,7 +122,7 @@ Rectangle {
             TextField {
                 id: contentUrlTextField
                 width: 260
-                text: "http://192.168.1.200/meeblue" // "https://tarmo.uuu.ee/meeblue"
+                text: "http://192.168.1.199/meeblue" // "https://tarmo.uuu.ee/meeblue"
                 placeholderText: qsTr("http://…")
             }
         }

@@ -35,6 +35,10 @@ Rectangle {
         id: socket
         url: settingsRef ? ("ws://" + settingsRef.serverIP + ":" + settingsRef.serverPort) : ""
 
+        // Set after the first successful connection; enables auto-reconnect.
+        // Cleared when the user cancels a connection attempt manually.
+        property bool wasConnected: false
+
         onTextMessageReceived: function (message) {
             console.log("WS message received:", message)
         }
@@ -43,16 +47,38 @@ Rectangle {
             if (socket.status === WebSocket.Error) {
                 console.log("WebSocket error:", socket.errorString, url)
                 socket.active = false
+                if (socket.wasConnected) reconnectTimer.restart()
             } else if (socket.status === WebSocket.Open) {
                 console.log("WebSocket open:", url)
+                socket.wasConnected = true
+                reconnectTimer.stop()
             } else if (socket.status === WebSocket.Closed) {
                 console.log("WebSocket closed")
                 socket.active = false
+                if (socket.wasConnected) reconnectTimer.restart()
             } else if (socket.status === WebSocket.Connecting) {
                 console.log("WebSocket connecting:", url)
             }
         }
         active: true
+    }
+
+    // Tries to reconnect 15 s after the connection was lost — only once there
+    // has been at least one successful connection. A failed attempt ends in
+    // Error/Closed, which restarts the timer, so it keeps retrying.
+    Timer {
+        id: reconnectTimer
+        interval: 10000
+        repeat: false
+        onTriggered: {
+            if (!socket.wasConnected || socket.status === WebSocket.Open
+                    || socket.status === WebSocket.Connecting)
+                return
+            if (Qt.application.state !== Qt.ApplicationActive)
+                return
+            console.log("Trying to reconnect WebSocket:", socket.url)
+            socket.active = true
+        }
     }
 
     Connections {
@@ -61,6 +87,7 @@ Rectangle {
             if (Qt.application.state === Qt.ApplicationSuspended) {
                 console.log("App suspended — closing WebSocket")
                 socket.active = false
+                reconnectTimer.stop()
             } else if (Qt.application.state === Qt.ApplicationActive) {
                 console.log("App active — opening WebSocket")
                 socket.active = true
@@ -338,6 +365,8 @@ Rectangle {
                 enabled: socket.status !== WebSocket.Open
                 onClicked: {
                     if (socket.status === WebSocket.Connecting) { // disconnect if clicked on connecting state
+                        socket.wasConnected = false // user cancelled: no auto-reconnect
+                        reconnectTimer.stop()
                         socket.active = false
                         return;
                     }
