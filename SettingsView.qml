@@ -137,7 +137,7 @@ Rectangle {
             ComboBox {
                 id: rulesComboBox
                 model: ["rules1", "rules2", "rules3", "rules4"]
-                onCurrentIndexChanged: updateRulesPreview()
+                onCurrentIndexChanged: updateRulesPreview(textAt(currentIndex))
             }
 
             Button {
@@ -190,9 +190,10 @@ Rectangle {
 
     }
 
-    function updateRulesPreview() {
+    function updateRulesPreview(rulesName) {
         if (fileDownloaderRef)
-            rulesPreviewArea.text = fileDownloaderRef.readRulesFileContent(rulesComboBox.currentText)
+            rulesPreviewArea.text = fileDownloaderRef.readRulesFileContent(
+                        rulesName !== undefined ? rulesName : rulesComboBox.textAt(rulesComboBox.currentIndex))
     }
 
     Component.onCompleted: updateRulesPreview()
