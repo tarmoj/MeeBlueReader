@@ -193,7 +193,7 @@ Rectangle {
     // --- Sound / image player ---
     MediaPlayer {
         id: soundPlayer
-        audioOutput: AudioOutput { volume: 1.0 }
+        audioOutput: AudioOutput { id: soundOutput; volume: 1.0 }
     }
 
     // Trigger sound from local data directory (file:// URL)
@@ -399,7 +399,7 @@ Rectangle {
         anchors.margins: 10
         spacing: 10
 
-        Flow {
+        RowLayout {
             id: statusRow
             spacing: 10
 
@@ -420,32 +420,27 @@ Rectangle {
 
             Label {
                 id: statusLabel
-                height: zerosCheck.height
+                //height: zerosCheck.height
                 text: qsTr("Strongest station: ") + strongestStation
                 verticalAlignment: Text.AlignVCenter
             }
 
-            Item {
-                visible: false
+        }
 
-                Button {
-                    text: qsTr("Send test info")
-                    onClicked: sendTestInfo(zerosCheck.checked)
-                }
+        RowLayout {
+            Layout.fillWidth: true
 
-                CheckBox {
-                    id: zerosCheck
-                    text: qsTr("Send zeros")
-                }
-
-                Button {
-                    text: qsTr("Reset")
-                    onClicked: {
-                        meeBlueReader.resetReadings()
-                        stationModel.clear()
-                        _stationState = ({})
-                    }
-                }
+            Label {
+                text: qsTr("Volume")
+                verticalAlignment: Text.AlignVCenter
+            }
+            Slider {
+                id: volumeSlider
+                Layout.preferredWidth: 150
+                from: 0.0
+                to: 1.0
+                value: soundOutput.volume
+                onMoved: soundOutput.volume = value
             }
         }
 
