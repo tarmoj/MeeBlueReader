@@ -57,7 +57,6 @@ private:
     QString m_currentBaseUrl;
     QStringList m_pendingSounds;
     QStringList m_pendingImages;
-    QVariantList m_pendingRules;   // rules waiting for media to finish
     int m_mediaTotal{0};
     int m_mediaDone{0};
 };

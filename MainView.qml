@@ -16,11 +16,12 @@ Rectangle {
     // Rules loaded from rules{N}.json.  Each element is a JS object matching the event schema.
     property var eventRules: []
 
-    // Per-station tracking state: { stationId: { prevRssi, prevProximity, cooldowns: {name: ms} } }
+    // Per-station tracking state: { stationId: { prevRssi, cooldowns: {name: ms} } }
     property var _stationState: ({})
 
-    // Proximity ordering used for "in" / "out" matching
-    readonly property var _proxOrder: ({ "Unknown": 0, "Far": 1, "Near": 2, "Immediate": 3 })
+    // Content-area stopwatch
+    property int elapsedSeconds: 0
+    property bool timerRunning: false
 
     gradient: Gradient {
         GradientStop { position: 0.0; color: Material.backgroundColor }
@@ -179,6 +180,13 @@ Rectangle {
         onTriggered: sendStationSnapshot()
     }
 
+    Timer {
+        id: stopwatchTimer
+        interval: 1000
+        repeat: true
+        onTriggered: elapsedSeconds++
+    }
+
     // --- Sound / image player ---
     MediaPlayer {
         id: soundPlayer
@@ -221,13 +229,30 @@ Rectangle {
         eventText.text = msg
     }
 
+    function formatElapsed(sec) {
+        const m = Math.floor(sec / 60)
+        const s = sec % 60
+        return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s)
+    }
+
+    function startContentTimer() {
+        elapsedSeconds = 0
+        timerRunning = true
+        stopwatchTimer.restart()
+    }
+
+    function stopContentTimer() {
+        stopwatchTimer.stop()
+        timerRunning = false
+        elapsedSeconds = 0
+    }
+
     // Evaluate all rules against the current station update.
-    function evaluateEvents(stationId, rssi, proximity) {
+    function evaluateEvents(stationId, rssi) {
         if (eventRules.length === 0) return
 
-        const state = _stationState[stationId] || { prevRssi: -999, prevProximity: "Unknown", cooldowns: {} }
+        const state = _stationState[stationId] || { prevRssi: -999, cooldowns: {} }
         const prevRssi   = state.prevRssi
-        const prevProx   = state.prevProximity
         const now        = Date.now()
 
         for (let i = 0; i < eventRules.length; i++) {
@@ -248,19 +273,6 @@ Rectangle {
                 if (!matched) continue
             }
 
-            // --- Proximity zone check ---
-            const rProx = (rule.proximity || "").trim()
-            if (rProx !== "") {
-                const inOut = (rule.inOut || "in").toLowerCase()
-                const curOrd  = _proxOrder[proximity]  !== undefined ? _proxOrder[proximity]  : 0
-                const prevOrd = _proxOrder[prevProx]   !== undefined ? _proxOrder[prevProx]   : 0
-                const rOrd    = _proxOrder[rProx]      !== undefined ? _proxOrder[rProx]      : 0
-                const enteredZone = curOrd >= rOrd && prevOrd < rOrd
-                const leftZone    = curOrd < rOrd  && prevOrd >= rOrd
-                const matched = (inOut === "in" && enteredZone) || (inOut === "out" && leftZone)
-                if (!matched) continue
-            }
-
             // --- Retrigger cooldown ---
             const cooldownMs = (rule.retriggerAllowedAfter !== undefined
                                     ? parseFloat(rule.retriggerAllowedAfter) : 0) * 1000
@@ -270,11 +282,18 @@ Rectangle {
 
             // --- All conditions passed: trigger ---
             console.log("Event triggered:", ruleName, "station", stationId)
+            if (ruleName==="timer-on-4")
+                console.log ("timer rule ", rule.timer)
             triggerEventSound(rule.sound || "")
             if (rule.text && rule.text !== "")
                 triggerEventText(rule.text)
             else
                 triggerEventImage(rule.image || "")
+
+            if (rule.timer === "start")
+                startContentTimer()
+            else if (rule.timer === "stop")
+                stopContentTimer()
 
             // Update cooldown timestamp (must re-read _stationState to avoid stale copy)
             const updated = _stationState[stationId] || state
@@ -333,13 +352,12 @@ Rectangle {
 
             // Evaluate rules-based events; must happen after strongestStation is updated
             // and before we write the new prev values.
-            evaluateEvents(stationId, rssi, proximity)
+            evaluateEvents(stationId, rssi)
 
             // Update previous-state tracking for this station
             var st = Object.assign({}, _stationState)
-            var prev = st[stationId] || { prevRssi: -999, prevProximity: "Unknown", cooldowns: {} }
-            prev.prevRssi      = rssi
-            prev.prevProximity = proximity
+            var prev = st[stationId] || { prevRssi: -999, cooldowns: {} }
+            prev.prevRssi = rssi
             st[stationId] = prev
             _stationState = st
         }
@@ -454,6 +472,23 @@ Rectangle {
                 onClicked: {
                     notationImage.source = ""
                     eventText.text = ""
+                }
+            }
+
+            RowLayout {
+                id: timerRow
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.margins: 5
+                spacing: 8
+
+                Label {
+                    font.pointSize: 18
+                    text: formatElapsed(elapsedSeconds)
+                }
+                Button {
+                    text: timerRunning ? qsTr("Stop") : qsTr("Start")
+                    onClicked: timerRunning ? stopContentTimer() : startContentTimer()
                 }
             }
 

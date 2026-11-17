@@ -2,8 +2,6 @@
   {
     "name": "enter-immediater-1",
     "station": 1,
-    "proximity": "",
-    "inOut": "in",
     "rssi": -55,
     "updDown": "up",
     "retriggerAllowedAfter": 10,
@@ -13,8 +11,6 @@
    {
     "name": "enter-immediate-2",
     "station": 2,
-    "proximity": "",
-    "inOut": "in",
     "rssi": -55,
     "updDown": "up",
     "retriggerAllowedAfter": 10,
@@ -24,20 +20,16 @@
    {
     "name": "enter-immediater-3",
     "station": 3,
-    "proximity": "",
-    "inOut": "in",
     "rssi": -55,
     "updDown": "up",
     "retriggerAllowedAfter": 10,
     "sound": "sound3.mp3",
     "image": ""
   },
-  
+
   {
     "name": "rssi-test-with-text",
     "station": 2,
-    "proximity": "",
-    "inOut": "in",
     "rssi": -70,
     "updDown": "up",
     "retriggerAllowedAfter": 5,
@@ -45,12 +37,10 @@
     "image": "",
     "text" : "entered to -70..-60 dB"
   },
-  
+
   {
     "name": "rssi-test-with-text",
     "station": 2,
-    "proximity": "",
-    "inOut": "in",
     "rssi": -60,
     "updDown": "down",
     "retriggerAllowedAfter": 5,
@@ -58,12 +48,10 @@
     "image": "",
     "text" : "entered to station 2 -70..-60 dB"
   },
-  
+
   {
     "name": "rssi-test-with-text2",
     "station": 2,
-    "proximity": "",
-    "inOut": "in",
     "rssi": -60,
     "updDown": "up",
     "retriggerAllowedAfter": 5,
@@ -71,12 +59,10 @@
     "image": "",
     "text" : "station 2 above -60"
   },
-  
+
   {
     "name": "rssi-test-with-text3",
     "station": 2,
-    "proximity": "",
-    "inOut": "in",
     "rssi": -50,
     "updDown": "up",
     "retriggerAllowedAfter": 5,
@@ -84,73 +70,20 @@
     "image": "",
     "text" : "2 less than -50 db"
   },
-  
+
   {
     "name": "rssi-2-out",
     "station": 2,
-    "proximity": "",
-    "inOut": "in",
     "rssi": -70,
     "updDown": "down",
     "retriggerAllowedAfter": 10,
     "sound": "",
     "image": "none",
     "text" : "none"
-  },
-  
-  {
-    "name": "proximity-3-image",
-    "station": 3,
-    "proximity": "Immediate",
-    "inOut": "in",
-    "rssi": 0,
-    "updDown": "down",
-    "retriggerAllowedAfter": 10,
-    "sound": "",
-    "image": "3-immediate.png",
-    "text" : ""
-  },
-  {
-    "name": "proximity-3-out1",
-    "station": 3,
-    "proximity": "Immediate",
-    "inOut": "out",
-    "rssi": 0,
-    "updDown": "down",
-    "retriggerAllowedAfter": 5,
-    "sound": "",
-    "image": "",
-    "text" : "3 immediate out"
-  }, 
-  
-  {
-    "name": "proximity-3-out2",
-    "station": 3,
-    "proximity": "Near",
-    "inOut": "out",
-    "rssi": 0,
-    "updDown": "down",
-    "retriggerAllowedAfter": 5,
-    "sound": "",
-    "image": "",
-    "text" : "3 near out"
-  }, 
-  
-  {
-    "name": "proximity-3-out3",
-    "station": 3,
-    "proximity": "Far",
-    "inOut": "out",
-    "rssi": 0,
-    "updDown": "down",
-    "retriggerAllowedAfter": 5,
-    "sound": "",
-    "image": "",
-    "text" : "3 far out"
   }
-  
-  
-  
-  
-  
+
+
+
+
+
 ]

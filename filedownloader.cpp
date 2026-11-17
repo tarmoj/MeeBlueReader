@@ -110,16 +110,18 @@ void FileDownloader::checkAndDownload(const QString &baseUrl, const QString &rul
         qDebug() << "FileDownloader: rules downloaded," << sounds.size()
                  << "sounds," << images.size() << "images to fetch";
 
+        // Reload rules right away so the app picks them up immediately;
+        // media referenced by the rules keeps downloading in the background.
+        emit rulesLoaded(rules);
+
         if (sounds.isEmpty() && images.isEmpty()) {
             emit statusMessage(tr("Done"));
-            emit rulesLoaded(rules);
             return;
         }
 
         m_currentBaseUrl = baseUrl;
         m_pendingSounds   = sounds;
         m_pendingImages   = images;
-        m_pendingRules    = rules;
         m_mediaTotal = sounds.size() + images.size();
         m_mediaDone  = 0;
         emit statusMessage(tr("Downloading media (0/%1)…").arg(m_mediaTotal));
@@ -162,8 +164,6 @@ void FileDownloader::downloadNextMediaFile()
     } else {
         // All done
         emit statusMessage(tr("Done"));
-        emit rulesLoaded(m_pendingRules);
-        m_pendingRules.clear();
         return;
     }
 
