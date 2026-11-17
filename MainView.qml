@@ -23,6 +23,9 @@ Rectangle {
     property int elapsedSeconds: 0
     property bool timerRunning: false
 
+    // Content-area media picker
+    property bool mediaPickerVisible: false
+
     gradient: Gradient {
         GradientStop { position: 0.0; color: Material.backgroundColor }
         GradientStop { position: 0.6; color: Material.backgroundColor }
@@ -308,6 +311,29 @@ Rectangle {
         id: stationModel
     }
 
+    ListModel {
+        id: mediaModel
+    }
+
+    function refreshMediaList() {
+        if (fileDownloaderRef === null) return
+        mediaModel.clear()
+        mediaModel.append({ "label": "", "fileName": "", "kind": "" })
+        const sounds = fileDownloaderRef.listSoundFiles()
+        for (let i = 0; i < sounds.length; i++)
+            mediaModel.append({ "label": sounds[i], "fileName": sounds[i], "kind": "sound" })
+        const images = fileDownloaderRef.listImageFiles()
+        for (let j = 0; j < images.length; j++)
+            mediaModel.append({ "label": images[j], "fileName": images[j], "kind": "image" })
+    }
+
+    Connections {
+        target: fileDownloaderRef
+        function onRulesLoaded() { refreshMediaList() }
+        function onStatusMessage(msg) { if (msg === qsTr("Done")) refreshMediaList() }
+    }
+
+    Component.onCompleted: refreshMediaList()
 
     Connections {
         target: meeBlueReader
@@ -463,32 +489,81 @@ Rectangle {
             color: "transparent"
             border.color: Material.dividerColor
 
-            ToolButton {
-                id: clearButton
-                anchors.right: parent.right
-                anchors.margins: 5
-                anchors.top: parent.top
-                text: qsTr("Clear")
-                onClicked: {
-                    notationImage.source = ""
-                    eventText.text = ""
-                }
-            }
-
             RowLayout {
-                id: timerRow
+                id: contentHeader
                 anchors.left: parent.left
+                anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.margins: 5
-                spacing: 8
+                spacing: 12
 
-                Label {
-                    font.pointSize: 18
-                    text: formatElapsed(elapsedSeconds)
+                RowLayout {
+                    id: timerRow
+                    spacing: 8
+
+                    Label {
+                        font.pointSize: 18
+                        text: formatElapsed(elapsedSeconds)
+                    }
+                    Button {
+                        text: timerRunning ? qsTr("Stop") : qsTr("Start")
+                        onClicked: timerRunning ? stopContentTimer() : startContentTimer()
+                    }
                 }
-                Button {
-                    text: timerRunning ? qsTr("Stop") : qsTr("Start")
-                    onClicked: timerRunning ? stopContentTimer() : startContentTimer()
+
+                RowLayout {
+                    id: mediaRow
+                    spacing: 8
+
+                    Label {
+                        text: qsTr("Show material")
+                        visible: !mediaPickerVisible
+                        font.underline: false
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: mediaPickerVisible = true
+                        }
+                    }
+                    ComboBox {
+                        id: mediaCombo
+                        visible: mediaPickerVisible
+                        model: mediaModel
+                        textRole: "label"
+                        Layout.preferredWidth: 160
+                        Layout.preferredHeight: 36
+                        background: Item {}
+                        onActivated: function(index) {
+                            const item = mediaModel.get(index)
+                            if (item.kind === "sound")
+                                triggerEventSound(item.fileName)
+                            else if (item.kind === "image")
+                                triggerEventImage(item.fileName)
+                        }
+                    }
+                    Label {
+                        text: qsTr("Hide")
+                        visible: mediaPickerVisible
+                        font.underline: false
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: mediaPickerVisible = false
+                        }
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                ToolButton {
+                    id: clearButton
+                    text: qsTr("Clear")
+                    onClicked: {
+                        notationImage.source = ""
+                        eventText.text = ""
+                    }
                 }
             }
 

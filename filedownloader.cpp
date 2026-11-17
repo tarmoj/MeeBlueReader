@@ -146,6 +146,26 @@ void FileDownloader::loadLocalRules(const QString &rulesName)
     emit rulesLoaded(rules);
 }
 
+QStringList FileDownloader::listSoundFiles() const
+{
+    QDir dir(m_localDataPath + "/sounds");
+    return dir.entryList(QDir::Files, QDir::Name);
+}
+
+QStringList FileDownloader::listImageFiles() const
+{
+    QDir dir(m_localDataPath + "/images");
+    return dir.entryList(QDir::Files, QDir::Name);
+}
+
+QString FileDownloader::readRulesFileContent(const QString &rulesName) const
+{
+    QFile f(m_localDataPath + "/rules/" + rulesName + ".json");
+    if (!f.open(QIODevice::ReadOnly))
+        return QString();
+    return QString::fromUtf8(f.readAll());
+}
+
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------

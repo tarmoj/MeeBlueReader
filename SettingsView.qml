@@ -137,6 +137,7 @@ Rectangle {
             ComboBox {
                 id: rulesComboBox
                 model: ["rules1", "rules2", "rules3", "rules4"]
+                onCurrentIndexChanged: updateRulesPreview()
             }
 
             Button {
@@ -170,11 +171,31 @@ Rectangle {
             target: fileDownloaderRef
             function onStatusMessage(msg)  { downloadStatusLabel.text = msg }
             function onDownloadError(msg)  { downloadStatusLabel.text = qsTr("Error: ") + msg }
+            function onRulesLoaded()       { updateRulesPreview() }
         }
 
-        Item {Layout.fillHeight: true}
+        ScrollView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+
+            TextArea {
+                id: rulesPreviewArea
+                readOnly: true
+                wrapMode: TextArea.NoWrap
+                font.family: "monospace"
+                text: ""
+            }
+        }
 
     }
+
+    function updateRulesPreview() {
+        if (fileDownloaderRef)
+            rulesPreviewArea.text = fileDownloaderRef.readRulesFileContent(rulesComboBox.currentText)
+    }
+
+    Component.onCompleted: updateRulesPreview()
 
 
 }
