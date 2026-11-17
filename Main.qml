@@ -29,6 +29,7 @@ ApplicationWindow {
         property alias serverPort:    settingsView.serverPort
         property alias contentUrl:    settingsView.contentUrl
         property alias selectedRules: settingsView.selectedRules
+        property alias volume:        settingsView.volume
     }
 
     // FileDownloader: downloads rules JSON + media files from configured URL.

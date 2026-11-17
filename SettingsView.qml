@@ -13,6 +13,7 @@ Rectangle {
     property alias connectButton: connectButton
     property alias contentUrl:  contentUrlTextField.text
     property alias selectedRules: rulesComboBox.currentIndex
+    property real volume: 1.0
     property var socketRef: null
     property var fileDownloaderRef: null
 
@@ -145,18 +146,8 @@ Rectangle {
                 enabled: fileDownloaderRef !== null
                 onClicked: {
                     if (fileDownloaderRef)
-                        fileDownloaderRef.checkAndDownload(contentUrlTextField.text,
-                                                           rulesComboBox.currentText)
+                        fileDownloaderRef.checkAndDownloadAll(contentUrlTextField.text)
                 }
-            }
-        }
-
-        Button {
-            id: refreshRulesButton
-            text: qsTr("Refresh rules")
-            onClicked: {
-                if (fileDownloaderRef)
-                    fileDownloaderRef.loadLocalRules(rulesComboBox.currentText)
             }
         }
 
@@ -172,6 +163,10 @@ Rectangle {
             function onStatusMessage(msg)  { downloadStatusLabel.text = msg }
             function onDownloadError(msg)  { downloadStatusLabel.text = qsTr("Error: ") + msg }
             function onRulesLoaded()       { updateRulesPreview() }
+            function onAllRulesChecked() {
+                if (fileDownloaderRef)
+                    fileDownloaderRef.loadLocalRules(rulesComboBox.textAt(rulesComboBox.currentIndex))
+            }
         }
 
         ScrollView {

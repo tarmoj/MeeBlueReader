@@ -36,6 +36,32 @@ QString FileDownloader::localDataPath() const
 
 void FileDownloader::checkAndDownload(const QString &baseUrl, const QString &rulesName)
 {
+    checkAndDownloadInternal(baseUrl, rulesName, nullptr);
+}
+
+void FileDownloader::checkAndDownloadAll(const QString &baseUrl)
+{
+    m_queueBaseUrl = baseUrl;
+    m_rulesQueue = {"rules1", "rules2", "rules3", "rules4"};
+    downloadNextQueuedRulesFile();
+}
+
+void FileDownloader::downloadNextQueuedRulesFile()
+{
+    if (m_rulesQueue.isEmpty()) {
+        emit statusMessage(tr("All rules files checked."));
+        emit allRulesChecked();
+        return;
+    }
+    const QString rulesName = m_rulesQueue.takeFirst();
+    checkAndDownloadInternal(m_queueBaseUrl, rulesName, [this]() {
+        downloadNextQueuedRulesFile();
+    });
+}
+
+void FileDownloader::checkAndDownloadInternal(const QString &baseUrl, const QString &rulesName,
+                                              std::function<void()> onDone)
+{
     const QString url = baseUrl.trimmed() + "/rules/" + rulesName + ".json";
     qDebug() << "FileDownloader: checking" << url;
     emit statusMessage(tr("Checking %1…").arg(rulesName + ".json"));
@@ -54,7 +80,7 @@ void FileDownloader::checkAndDownload(const QString &baseUrl, const QString &rul
         req.setRawHeader("If-Modified-Since", lastMod.toUtf8());
 
     QNetworkReply *reply = m_nam.get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, rulesName, baseUrl]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, rulesName, baseUrl, onDone]() {
         reply->deleteLater();
 
         const int status =
@@ -66,10 +92,12 @@ void FileDownloader::checkAndDownload(const QString &baseUrl, const QString &rul
                 qDebug() << "FileDownloader: rules up to date (304)";
                 emit statusMessage(tr("Up to date"));
                 loadLocalRules(rulesName);
+                if (onDone) onDone();
                 return;
             }
             emit downloadError(tr("Network error: %1").arg(reply->errorString()));
             emit statusMessage(tr("Error: %1").arg(reply->errorString()));
+            if (onDone) onDone();
             return;
         }
 
@@ -77,6 +105,7 @@ void FileDownloader::checkAndDownload(const QString &baseUrl, const QString &rul
             qDebug() << "FileDownloader: rules up to date (304)";
             emit statusMessage(tr("Up to date"));
             loadLocalRules(rulesName);
+            if (onDone) onDone();
             return;
         }
 
@@ -86,6 +115,7 @@ void FileDownloader::checkAndDownload(const QString &baseUrl, const QString &rul
         QFile f(localFile);
         if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
             emit downloadError(tr("Cannot write %1").arg(localFile));
+            if (onDone) onDone();
             return;
         }
         f.write(data);
@@ -116,6 +146,7 @@ void FileDownloader::checkAndDownload(const QString &baseUrl, const QString &rul
 
         if (sounds.isEmpty() && images.isEmpty()) {
             emit statusMessage(tr("Done"));
+            if (onDone) onDone();
             return;
         }
 
@@ -124,6 +155,7 @@ void FileDownloader::checkAndDownload(const QString &baseUrl, const QString &rul
         m_pendingImages   = images;
         m_mediaTotal = sounds.size() + images.size();
         m_mediaDone  = 0;
+        m_onRulesFileDone = onDone;
         emit statusMessage(tr("Downloading media (0/%1)…").arg(m_mediaTotal));
         downloadNextMediaFile();
     });
@@ -135,6 +167,7 @@ void FileDownloader::loadLocalRules(const QString &rulesName)
     QFile f(localFile);
     if (!f.open(QIODevice::ReadOnly)) {
         qDebug() << "FileDownloader: no local rules file" << localFile;
+        emit statusMessage(tr("Loaded 0 rules."));
         emit rulesLoaded({});
         return;
     }
@@ -184,6 +217,9 @@ void FileDownloader::downloadNextMediaFile()
     } else {
         // All done
         emit statusMessage(tr("Done"));
+        const std::function<void()> onDone = m_onRulesFileDone;
+        m_onRulesFileDone = nullptr;
+        if (onDone) onDone();
         return;
     }
 

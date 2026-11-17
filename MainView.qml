@@ -193,7 +193,7 @@ Rectangle {
     // --- Sound / image player ---
     MediaPlayer {
         id: soundPlayer
-        audioOutput: AudioOutput { id: soundOutput; volume: 1.0 }
+        audioOutput: AudioOutput { id: soundOutput; volume: settingsRef ? settingsRef.volume : 1.0 }
     }
 
     // Trigger sound from local data directory (file:// URL)
@@ -440,7 +440,7 @@ Rectangle {
                 from: 0.0
                 to: 1.0
                 value: soundOutput.volume
-                onMoved: soundOutput.volume = value
+                onMoved: if (settingsRef) settingsRef.volume = value
             }
         }
 

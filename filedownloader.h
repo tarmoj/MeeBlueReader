@@ -7,6 +7,7 @@
 #include <QNetworkReply>
 #include <QVariantList>
 #include <QStringList>
+#include <functional>
 
 // FileDownloader: downloads rules JSON and referenced media files from a base URL.
 // Files are stored under QStandardPaths::AppDataLocation/{rules,sounds,images}/.
@@ -25,6 +26,10 @@ public:
     // baseUrl: e.g. "https://tarmo.uuu.ee/meeblue"
     // rulesName: e.g. "rules1"  (file fetched: <baseUrl>/rules/<rulesName>.json)
     Q_INVOKABLE void checkAndDownload(const QString &baseUrl, const QString &rulesName);
+
+    // Check and download rules1..rules4 (and their media) one after another.
+    // Emits allRulesChecked() once every file has been processed.
+    Q_INVOKABLE void checkAndDownloadAll(const QString &baseUrl);
 
     // Read the already-downloaded rules file and emit rulesLoaded immediately.
     Q_INVOKABLE void loadLocalRules(const QString &rulesName);
@@ -46,7 +51,13 @@ signals:
     // Emitted on network or file error.
     void downloadError(const QString &message);
 
+    // Emitted once checkAndDownloadAll() has processed every rules file.
+    void allRulesChecked();
+
 private:
+    void checkAndDownloadInternal(const QString &baseUrl, const QString &rulesName,
+                                  std::function<void()> onDone);
+    void downloadNextQueuedRulesFile();
     void downloadMediaFiles(const QString &baseUrl, const QStringList &soundFiles,
                             const QStringList &imageFiles);
     void downloadNextMediaFile();
@@ -66,6 +77,11 @@ private:
     QStringList m_pendingImages;
     int m_mediaTotal{0};
     int m_mediaDone{0};
+    std::function<void()> m_onRulesFileDone;
+
+    // State for checkAndDownloadAll()
+    QStringList m_rulesQueue;
+    QString m_queueBaseUrl;
 };
 
 #endif // FILEDOWNLOADER_H
