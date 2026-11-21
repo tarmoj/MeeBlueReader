@@ -53,3 +53,4 @@ _codeql_detected_source_root
 .gitignore
 CMakeLists.txt.user
 *.autosave
+android/.gradle/*
