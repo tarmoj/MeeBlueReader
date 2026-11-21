@@ -351,6 +351,23 @@ Rectangle {
 
     Component.onCompleted: refreshMediaList()
 
+    // Inserts a newly-seen station into stationModel keeping it ordered by stationId (1..6).
+    function insertStationSorted(stationId, rssi, proximity, beaconIds) {
+        var pos = stationModel.count
+        for (var i = 0; i < stationModel.count; i++) {
+            if (stationModel.get(i).stationId > stationId) {
+                pos = i
+                break
+            }
+        }
+        stationModel.insert(pos, {
+            "stationId": stationId,
+            "rssi": rssi,
+            "proximity": proximity,
+            "beaconIds": beaconIds
+        })
+    }
+
     // Applies one station reading (from the Bluetooth scanner or a manual drag) to
     // stationModel, recomputes the strongest station, fires matching rules, and
     // sends the updated snapshot — the single path both update sources go through.
@@ -371,14 +388,9 @@ Rectangle {
             }
         }
 
-        // Add new station if not found
+        // Add new station if not found, keeping the model ordered by stationId
         if (!found) {
-            stationModel.append({
-                "stationId": stationId,
-                "rssi": rssi,
-                "proximity": proximity,
-                "beaconIds": beaconIds
-            });
+            insertStationSorted(stationId, rssi, proximity, beaconIds);
         }
 
         // Find strongest station (highest RSSI)

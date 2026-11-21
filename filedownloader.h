@@ -66,6 +66,8 @@ signals:
 private:
     void checkAndDownloadInternal(const QString &baseUrl, const QString &rulesName,
                                   std::function<void()> onDone);
+    void processRulesDataAndFetchMedia(const QByteArray &data, const QString &baseUrl,
+                                       std::function<void()> onDone);
     void downloadNextQueuedRulesFile();
     void downloadMediaFiles(const QString &baseUrl, const QStringList &soundFiles,
                             const QStringList &imageFiles);

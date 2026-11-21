@@ -61,6 +61,42 @@ void FileDownloader::downloadNextQueuedRulesFile()
     });
 }
 
+// Parses rules JSON (freshly downloaded or re-read from disk after a 304), emits
+// rulesLoaded(), and kicks off media downloads for anything referenced that isn't
+// local yet. Must run even when the rules file itself is unchanged, since media
+// can still be missing (e.g. added to the server without touching rules{N}.json).
+void FileDownloader::processRulesDataAndFetchMedia(const QByteArray &data, const QString &baseUrl,
+                                                    std::function<void()> onDone)
+{
+    const QVariantList rules = parseRulesJson(data);
+    QStringList sounds, images, soundPatterns, imagePatterns;
+    collectMediaFilenames(rules, sounds, images, soundPatterns, imagePatterns);
+
+    qDebug() << "FileDownloader: rules have" << sounds.size()
+             << "sounds," << images.size() << "images," << soundPatterns.size()
+             << "sound wildcards," << imagePatterns.size() << "image wildcards to check";
+
+    // Reload rules right away so the app picks them up immediately;
+    // media referenced by the rules keeps downloading in the background.
+    emit rulesLoaded(rules);
+
+    if (sounds.isEmpty() && images.isEmpty()
+        && soundPatterns.isEmpty() && imagePatterns.isEmpty()) {
+        emit statusMessage(tr("Done"));
+        if (onDone) onDone();
+        return;
+    }
+
+    m_currentBaseUrl = baseUrl;
+    m_pendingSounds   = sounds;
+    m_pendingImages   = images;
+    m_pendingSoundPatterns = soundPatterns;
+    m_pendingImagePatterns = imagePatterns;
+    m_onRulesFileDone = onDone;
+    emit statusMessage(tr("Resolving media…"));
+    resolveWildcardPatterns();
+}
+
 void FileDownloader::checkAndDownloadInternal(const QString &baseUrl, const QString &rulesName,
                                               std::function<void()> onDone)
 {
@@ -93,8 +129,10 @@ void FileDownloader::checkAndDownloadInternal(const QString &baseUrl, const QStr
             if (status == 304) {
                 qDebug() << "FileDownloader: rules up to date (304)";
                 emit statusMessage(tr("Up to date"));
-                loadLocalRules(rulesName);
-                if (onDone) onDone();
+                const QString localFile = m_localDataPath + "/rules/" + rulesName + ".json";
+                QFile f(localFile);
+                const QByteArray data = f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
+                processRulesDataAndFetchMedia(data, baseUrl, onDone);
                 return;
             }
             emit downloadError(tr("Network error: %1").arg(reply->errorString()));
@@ -106,8 +144,10 @@ void FileDownloader::checkAndDownloadInternal(const QString &baseUrl, const QStr
         if (status == 304) {
             qDebug() << "FileDownloader: rules up to date (304)";
             emit statusMessage(tr("Up to date"));
-            loadLocalRules(rulesName);
-            if (onDone) onDone();
+            const QString localFile = m_localDataPath + "/rules/" + rulesName + ".json";
+            QFile f(localFile);
+            const QByteArray data = f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
+            processRulesDataAndFetchMedia(data, baseUrl, onDone);
             return;
         }
 
@@ -134,34 +174,7 @@ void FileDownloader::checkAndDownloadInternal(const QString &baseUrl, const QStr
         else if (!newLastMod.isEmpty())
             s2.setValue(lastModKey(rulesName), newLastMod);
 
-        // Parse rules and kick off media downloads
-        const QVariantList rules = parseRulesJson(data);
-        QStringList sounds, images, soundPatterns, imagePatterns;
-        collectMediaFilenames(rules, sounds, images, soundPatterns, imagePatterns);
-
-        qDebug() << "FileDownloader: rules downloaded," << sounds.size()
-                 << "sounds," << images.size() << "images," << soundPatterns.size()
-                 << "sound wildcards," << imagePatterns.size() << "image wildcards to fetch";
-
-        // Reload rules right away so the app picks them up immediately;
-        // media referenced by the rules keeps downloading in the background.
-        emit rulesLoaded(rules);
-
-        if (sounds.isEmpty() && images.isEmpty()
-            && soundPatterns.isEmpty() && imagePatterns.isEmpty()) {
-            emit statusMessage(tr("Done"));
-            if (onDone) onDone();
-            return;
-        }
-
-        m_currentBaseUrl = baseUrl;
-        m_pendingSounds   = sounds;
-        m_pendingImages   = images;
-        m_pendingSoundPatterns = soundPatterns;
-        m_pendingImagePatterns = imagePatterns;
-        m_onRulesFileDone = onDone;
-        emit statusMessage(tr("Resolving media…"));
-        resolveWildcardPatterns();
+        processRulesDataAndFetchMedia(data, baseUrl, onDone);
     });
 }
 
@@ -233,7 +246,9 @@ QStringList FileDownloader::parseDirectoryListing(const QString &html)
         if (href.isEmpty() || href.startsWith('?') || href.startsWith('/')
             || href.contains("://") || href == "../" || href == "./")
             continue;
-        const QString name = QUrl(href).path();
+        QString name = QUrl(href).path();
+        if (name.startsWith("./"))
+            name.remove(0, 2);
         if (!name.isEmpty() && !name.endsWith('/'))
             names << name;
     }
@@ -422,7 +437,7 @@ void FileDownloader::collectMediaFilenames(const QVariantList &rules,
             else
                 sounds.insert(sound);
         }
-        if (!image.isEmpty()) {
+        if (!image.isEmpty() && image.compare("none", Qt::CaseInsensitive) != 0) {
             if (image.contains('*') || image.contains('?'))
                 imagePat.insert(image);
             else
