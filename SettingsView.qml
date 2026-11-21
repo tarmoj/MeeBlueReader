@@ -16,6 +16,9 @@ Rectangle {
     property real volume: 1.0
     property var socketRef: null
     property var fileDownloaderRef: null
+    property bool allowEditingRules: false
+
+    signal rulesApplied(var rules)
 
     gradient: Gradient {
         GradientStop { position: 0.0; color: Material.backgroundColor }
@@ -176,11 +179,17 @@ Rectangle {
 
             TextArea {
                 id: rulesPreviewArea
-                readOnly: true
+                readOnly: !allowEditingRules
                 wrapMode: TextArea.NoWrap
                 font.family: "monospace"
                 text: ""
             }
+        }
+
+        Button {
+            text: qsTr("Apply")
+            visible: allowEditingRules
+            onClicked: rulesApplied(fileDownloaderRef.parseRulesText(rulesPreviewArea.text))
         }
 
     }

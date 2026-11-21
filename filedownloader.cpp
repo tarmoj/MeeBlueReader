@@ -378,6 +378,11 @@ void FileDownloader::downloadNextMediaFile()
     });
 }
 
+QVariantList FileDownloader::parseRulesText(const QString &jsonText)
+{
+    return parseRulesJson(jsonText.toUtf8());
+}
+
 QVariantList FileDownloader::parseRulesJson(const QByteArray &data)
 {
     QJsonParseError err;

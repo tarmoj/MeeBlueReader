@@ -19,6 +19,9 @@ Rectangle {
     // Per-station tracking state: { stationId: { prevRssi, cooldowns: {name: ms} } }
     property var _stationState: ({})
 
+    // When true, station meters are set by dragging instead of by the Bluetooth scanner.
+    property bool manualMode: false
+
     // Content-area stopwatch
     property int elapsedSeconds: 0
     property bool timerRunning: false
@@ -337,57 +340,65 @@ Rectangle {
 
     Component.onCompleted: refreshMediaList()
 
-    Connections {
-        target: meeBlueReader
-        function onNewStationInfo(stationId, rssi, proximity, beaconIds) {
-            // Check if station already exists in the model
-            var found = false;
-            for (var i = 0; i < stationModel.count; i++) {
-                if (stationModel.get(i).stationId === stationId) {
-                    // Update existing station
-                    stationModel.set(i, {
-                        "stationId": stationId,
-                        "rssi": rssi,
-                        "proximity": proximity,
-                        "beaconIds": beaconIds
-                    });
-                    found = true;
-                    break;
-                }
-            }
-
-            // Add new station if not found
-            if (!found) {
-                stationModel.append({
+    // Applies one station reading (from the Bluetooth scanner or a manual drag) to
+    // stationModel, recomputes the strongest station, fires matching rules, and
+    // sends the updated snapshot — the single path both update sources go through.
+    function applyStationReading(stationId, rssi, proximity, beaconIds) {
+        // Check if station already exists in the model
+        var found = false;
+        for (var i = 0; i < stationModel.count; i++) {
+            if (stationModel.get(i).stationId === stationId) {
+                // Update existing station
+                stationModel.set(i, {
                     "stationId": stationId,
                     "rssi": rssi,
                     "proximity": proximity,
                     "beaconIds": beaconIds
                 });
+                found = true;
+                break;
             }
+        }
 
-            // Find strongest station (highest RSSI)
-            var maxRssi = -999;
-            var maxStationId = 0;
-            for (var j = 0; j < stationModel.count; j++) {
-                if (stationModel.get(j).rssi > maxRssi) {
-                    maxRssi = stationModel.get(j).rssi;
-                    maxStationId = stationModel.get(j).stationId;
-                }
+        // Add new station if not found
+        if (!found) {
+            stationModel.append({
+                "stationId": stationId,
+                "rssi": rssi,
+                "proximity": proximity,
+                "beaconIds": beaconIds
+            });
+        }
+
+        // Find strongest station (highest RSSI)
+        var maxRssi = -999;
+        var maxStationId = 0;
+        for (var j = 0; j < stationModel.count; j++) {
+            if (stationModel.get(j).rssi > maxRssi) {
+                maxRssi = stationModel.get(j).rssi;
+                maxStationId = stationModel.get(j).stationId;
             }
-            strongestStation = maxStationId;
-            wsBatchTimer.restart()
+        }
+        strongestStation = maxStationId;
+        wsBatchTimer.restart()
 
-            // Evaluate rules-based events; must happen after strongestStation is updated
-            // and before we write the new prev values.
-            evaluateEvents(stationId, rssi)
+        // Evaluate rules-based events; must happen after strongestStation is updated
+        // and before we write the new prev values.
+        evaluateEvents(stationId, rssi)
 
-            // Update previous-state tracking for this station
-            var st = Object.assign({}, _stationState)
-            var prev = st[stationId] || { prevRssi: -999, cooldowns: {} }
-            prev.prevRssi = rssi
-            st[stationId] = prev
-            _stationState = st
+        // Update previous-state tracking for this station
+        var st = Object.assign({}, _stationState)
+        var prev = st[stationId] || { prevRssi: -999, cooldowns: {} }
+        prev.prevRssi = rssi
+        st[stationId] = prev
+        _stationState = st
+    }
+
+    Connections {
+        target: meeBlueReader
+        function onNewStationInfo(stationId, rssi, proximity, beaconIds) {
+            if (manualMode) return  // ignore the Bluetooth scanner while dragging meters by hand
+            applyStationReading(stationId, rssi, proximity, beaconIds)
         }
     }
 
@@ -474,6 +485,11 @@ Rectangle {
                     Layout.fillWidth: true
                     notationImageRef: notationImage
                     //strongestStation: mainView.strongestStation
+                    manualMode: mainView.manualMode
+                    onManualRssiRequested: function(newRssi) {
+                        applyStationReading(model.stationId, newRssi,
+                                             rssiToProximity(newRssi), model.beaconIds)
+                    }
                 }
             }
         }

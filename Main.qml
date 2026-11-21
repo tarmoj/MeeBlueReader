@@ -58,6 +58,9 @@ ApplicationWindow {
         function onSelectedRulesChanged() {
             fileDownloader.loadLocalRules("rules" + (settingsView.selectedRules + 1))
         }
+        function onRulesApplied(rules) {
+            mainPage.eventRules = rules
+        }
     }
 
     header: ToolBar {
@@ -127,6 +130,18 @@ ApplicationWindow {
                     drawer.close()
                     helpDialog.open()
                 }
+            }
+
+            CheckBox {
+                text: qsTr("Allow editing rules")
+                checked: settingsView.allowEditingRules
+                onCheckedChanged: settingsView.allowEditingRules = checked
+            }
+
+            CheckBox {
+                text: qsTr("Allow manual mode")
+                checked: mainPage.manualMode
+                onCheckedChanged: mainPage.manualMode = checked
             }
 
 

@@ -13,11 +13,18 @@ Item {
     property color color: "green"
     property double level:  rssiToLevel(rssi)
     property var notationImageRef: null
+    property bool manualMode: false
+
+    signal manualRssiRequested(int rssi)
 
     function rssiToLevel(rssi) {
         if (rssi <= -80) return 0;
         if (rssi >= -40) return 1;
         return (rssi + 80) / 40;
+    }
+
+    function levelToRssi(level) {
+        return Math.round(level * 40 - 80)
     }
 
     RowLayout {
@@ -69,7 +76,20 @@ Item {
                 }
 
                 Behavior on width {
+                    enabled: !manualMode
                     NumberAnimation { duration: 1000 }
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: manualMode
+                cursorShape: manualMode ? Qt.SizeHorCursor : Qt.ArrowCursor
+                onPressed:         setVal(mouseX)
+                onPositionChanged: if (pressed) setVal(mouseX)
+                function setVal(x) {
+                    var frac = x / meterRect.width
+                    station.manualRssiRequested(station.levelToRssi(Math.max(0.0, Math.min(1.0, frac))))
                 }
             }
         }

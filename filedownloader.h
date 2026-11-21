@@ -41,6 +41,9 @@ public:
     // Read the raw content of a local rules{N}.json file (empty string if missing).
     Q_INVOKABLE QString readRulesFileContent(const QString &rulesName) const;
 
+    // Parse rules JSON text (e.g. user-edited in the UI) without touching disk.
+    Q_INVOKABLE QVariantList parseRulesText(const QString &jsonText);
+
     // Resolve a rule's "sound" value to a concrete local filename.
     // If pattern has no '*'/'?' wildcard it is returned unchanged.
     // Otherwise a random match among local sounds/ files is returned
