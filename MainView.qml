@@ -332,6 +332,17 @@ Rectangle {
             mediaModel.append({ "label": images[j], "fileName": images[j], "kind": "image" })
     }
 
+    // Selects mediaModel[index] in the combo box and triggers its sound/image.
+    function activateMediaItem(index) {
+        if (index < 0 || index >= mediaModel.count) return
+        mediaCombo.currentIndex = index
+        const item = mediaModel.get(index)
+        if (item.kind === "sound")
+            triggerEventSound(item.fileName)
+        else if (item.kind === "image")
+            triggerEventImage(item.fileName)
+    }
+
     Connections {
         target: fileDownloaderRef
         function onRulesLoaded() { refreshMediaList() }
@@ -539,21 +550,29 @@ Rectangle {
                             onClicked: mediaPickerVisible = true
                         }
                     }
+                    ToolButton {
+                        text: "<"
+                        visible: mediaPickerVisible
+                        enabled: mediaCombo.currentIndex > 0
+                        onClicked: activateMediaItem(mediaCombo.currentIndex - 1)
+                    }
                     ComboBox {
                         id: mediaCombo
                         visible: mediaPickerVisible
                         model: mediaModel
                         textRole: "label"
-                        Layout.preferredWidth: 160
+                        Layout.preferredWidth: 200
+                        Layout.maximumWidth: 300
+                        Layout.fillWidth: true
                         Layout.preferredHeight: 36
                         background: Item {}
-                        onActivated: function(index) {
-                            const item = mediaModel.get(index)
-                            if (item.kind === "sound")
-                                triggerEventSound(item.fileName)
-                            else if (item.kind === "image")
-                                triggerEventImage(item.fileName)
-                        }
+                        onActivated: function(index) { activateMediaItem(index) }
+                    }
+                    ToolButton {
+                        text: qsTr(">")
+                        visible: mediaPickerVisible
+                        enabled: mediaCombo.currentIndex < mediaModel.count - 1
+                        onClicked: activateMediaItem(mediaCombo.currentIndex + 1)
                     }
                     Label {
                         text: qsTr("Hide")
