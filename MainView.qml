@@ -613,9 +613,10 @@ Rectangle {
 
             Image {
                 id: notationImage
-                anchors.centerIn: parent
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
                 width: parent.width * 0.8
-                height: Math.min(implicitHeight, contentArea.height)
+                height: Math.min(implicitHeight, contentArea.height-contentHeader.height)
                 fillMode: Image.PreserveAspectFit
                 source: ""
             }

@@ -84,6 +84,7 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 enabled: manualMode
+                preventStealing: true // keep the drag from being taken over by the SwipeView
                 cursorShape: manualMode ? Qt.SizeHorCursor : Qt.ArrowCursor
                 onPressed:         setVal(mouseX)
                 onPositionChanged: if (pressed) setVal(mouseX)
