@@ -595,9 +595,21 @@ Rectangle {
                     onClicked: {
                         notationImage.source = ""
                         eventText.text = ""
+                        soundPlayer.stop()
                     }
                 }
             }
+
+            Label {
+                id: fileNameLabel
+                anchors.left: parent.left
+                anchors.top: contentHeader.bottom
+                anchors.margins: 5
+                visible: mediaPickerVisible && mediaCombo.currentIndex >= 0 && mediaCombo.currentIndex < mediaModel.count
+                text: mediaCombo.currentIndex >= 0 && mediaCombo.currentIndex < mediaModel.count
+                       ? mediaModel.get(mediaCombo.currentIndex).fileName : ""
+            }
+
 
             Image {
                 id: notationImage
