@@ -6,6 +6,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkRequest>
+#include <QRandomGenerator>
+#include <QRegularExpression>
 #include <QSet>
 #include <QSettings>
 #include <QStandardPaths>
@@ -134,17 +136,19 @@ void FileDownloader::checkAndDownloadInternal(const QString &baseUrl, const QStr
 
         // Parse rules and kick off media downloads
         const QVariantList rules = parseRulesJson(data);
-        QStringList sounds, images;
-        collectMediaFilenames(rules, sounds, images);
+        QStringList sounds, images, soundPatterns, imagePatterns;
+        collectMediaFilenames(rules, sounds, images, soundPatterns, imagePatterns);
 
         qDebug() << "FileDownloader: rules downloaded," << sounds.size()
-                 << "sounds," << images.size() << "images to fetch";
+                 << "sounds," << images.size() << "images," << soundPatterns.size()
+                 << "sound wildcards," << imagePatterns.size() << "image wildcards to fetch";
 
         // Reload rules right away so the app picks them up immediately;
         // media referenced by the rules keeps downloading in the background.
         emit rulesLoaded(rules);
 
-        if (sounds.isEmpty() && images.isEmpty()) {
+        if (sounds.isEmpty() && images.isEmpty()
+            && soundPatterns.isEmpty() && imagePatterns.isEmpty()) {
             emit statusMessage(tr("Done"));
             if (onDone) onDone();
             return;
@@ -153,11 +157,11 @@ void FileDownloader::checkAndDownloadInternal(const QString &baseUrl, const QStr
         m_currentBaseUrl = baseUrl;
         m_pendingSounds   = sounds;
         m_pendingImages   = images;
-        m_mediaTotal = sounds.size() + images.size();
-        m_mediaDone  = 0;
+        m_pendingSoundPatterns = soundPatterns;
+        m_pendingImagePatterns = imagePatterns;
         m_onRulesFileDone = onDone;
-        emit statusMessage(tr("Downloading media (0/%1)…").arg(m_mediaTotal));
-        downloadNextMediaFile();
+        emit statusMessage(tr("Resolving media…"));
+        resolveWildcardPatterns();
     });
 }
 
@@ -185,6 +189,21 @@ QStringList FileDownloader::listSoundFiles() const
     return dir.entryList(QDir::Files, QDir::Name);
 }
 
+QString FileDownloader::pickSoundFile(const QString &pattern) const
+{
+    if (!pattern.contains('*') && !pattern.contains('?'))
+        return pattern;
+
+    QDir dir(m_localDataPath + "/sounds");
+    dir.setNameFilters({pattern});
+    const QStringList matches = dir.entryList(QDir::Files, QDir::Name);
+    if (matches.isEmpty())
+        return QString();
+    if (matches.size() == 1)
+        return matches.first();
+    return matches.at(QRandomGenerator::global()->bounded(matches.size()));
+}
+
 QStringList FileDownloader::listImageFiles() const
 {
     QDir dir(m_localDataPath + "/images");
@@ -202,6 +221,93 @@ QString FileDownloader::readRulesFileContent(const QString &rulesName) const
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
+
+QStringList FileDownloader::parseDirectoryListing(const QString &html)
+{
+    QStringList names;
+    static const QRegularExpression hrefRe(
+        "href=\"([^\"]+)\"", QRegularExpression::CaseInsensitiveOption);
+    auto it = hrefRe.globalMatch(html);
+    while (it.hasNext()) {
+        const QString href = it.next().captured(1);
+        if (href.isEmpty() || href.startsWith('?') || href.startsWith('/')
+            || href.contains("://") || href == "../" || href == "./")
+            continue;
+        const QString name = QUrl(href).path();
+        if (!name.isEmpty() && !name.endsWith('/'))
+            names << name;
+    }
+    return names;
+}
+
+void FileDownloader::resolveWildcardPatterns()
+{
+    if (!m_pendingSoundPatterns.isEmpty()) {
+        const QString url = m_currentBaseUrl + "/sounds/";
+        QNetworkReply *reply = m_nam.get(QNetworkRequest(QUrl(url)));
+        connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+            reply->deleteLater();
+            if (reply->error() == QNetworkReply::NoError) {
+                const QStringList names = parseDirectoryListing(QString::fromUtf8(reply->readAll()));
+                for (const QString &pattern : std::as_const(m_pendingSoundPatterns)) {
+                    const QRegularExpression re(QRegularExpression::wildcardToRegularExpression(pattern));
+                    for (const QString &name : names) {
+                        if (re.match(name).hasMatch() && !m_pendingSounds.contains(name))
+                            m_pendingSounds << name;
+                    }
+                }
+            } else {
+                emit statusMessage(tr("Could not list sounds for wildcard rules (%1)")
+                                        .arg(reply->errorString()));
+            }
+            m_pendingSoundPatterns.clear();
+            resolveWildcardPatterns();
+        });
+        return;
+    }
+
+    if (!m_pendingImagePatterns.isEmpty()) {
+        const QString url = m_currentBaseUrl + "/images/";
+        QNetworkReply *reply = m_nam.get(QNetworkRequest(QUrl(url)));
+        connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+            reply->deleteLater();
+            if (reply->error() == QNetworkReply::NoError) {
+                const QStringList names = parseDirectoryListing(QString::fromUtf8(reply->readAll()));
+                for (const QString &pattern : std::as_const(m_pendingImagePatterns)) {
+                    const QRegularExpression re(QRegularExpression::wildcardToRegularExpression(pattern));
+                    for (const QString &name : names) {
+                        if (re.match(name).hasMatch() && !m_pendingImages.contains(name))
+                            m_pendingImages << name;
+                    }
+                }
+            } else {
+                emit statusMessage(tr("Could not list images for wildcard rules (%1)")
+                                        .arg(reply->errorString()));
+            }
+            m_pendingImagePatterns.clear();
+            resolveWildcardPatterns();
+        });
+        return;
+    }
+
+    beginMediaDownloads();
+}
+
+void FileDownloader::beginMediaDownloads()
+{
+    if (m_pendingSounds.isEmpty() && m_pendingImages.isEmpty()) {
+        emit statusMessage(tr("Done"));
+        const std::function<void()> onDone = m_onRulesFileDone;
+        m_onRulesFileDone = nullptr;
+        if (onDone) onDone();
+        return;
+    }
+
+    m_mediaTotal = m_pendingSounds.size() + m_pendingImages.size();
+    m_mediaDone  = 0;
+    emit statusMessage(tr("Downloading media (0/%1)…").arg(m_mediaTotal));
+    downloadNextMediaFile();
+}
 
 void FileDownloader::downloadNextMediaFile()
 {
@@ -296,20 +402,32 @@ QVariantList FileDownloader::parseRulesJson(const QByteArray &data)
 
 void FileDownloader::collectMediaFilenames(const QVariantList &rules,
                                            QStringList &soundFiles,
-                                           QStringList &imageFiles)
+                                           QStringList &imageFiles,
+                                           QStringList &soundPatterns,
+                                           QStringList &imagePatterns)
 {
-    QSet<QString> sounds, images;
+    QSet<QString> sounds, images, soundPat, imagePat;
     for (const QVariant &v : rules) {
         const QVariantMap ev = v.toMap();
         const QString sound  = ev.value("sound").toString().trimmed();
         const QString image  = ev.value("image").toString().trimmed();
-        if (!sound.isEmpty())
-            sounds.insert(sound);
-        if (!image.isEmpty())
-            images.insert(image);
+        if (!sound.isEmpty()) {
+            if (sound.contains('*') || sound.contains('?'))
+                soundPat.insert(sound);
+            else
+                sounds.insert(sound);
+        }
+        if (!image.isEmpty()) {
+            if (image.contains('*') || image.contains('?'))
+                imagePat.insert(image);
+            else
+                images.insert(image);
+        }
     }
-    soundFiles = QStringList(sounds.begin(), sounds.end());
-    imageFiles = QStringList(images.begin(), images.end());
+    soundFiles    = QStringList(sounds.begin(), sounds.end());
+    imageFiles    = QStringList(images.begin(), images.end());
+    soundPatterns = QStringList(soundPat.begin(), soundPat.end());
+    imagePatterns = QStringList(imagePat.begin(), imagePat.end());
 }
 
 QString FileDownloader::etagKey(const QString &rulesName) const

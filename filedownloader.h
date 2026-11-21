@@ -41,6 +41,12 @@ public:
     // Read the raw content of a local rules{N}.json file (empty string if missing).
     Q_INVOKABLE QString readRulesFileContent(const QString &rulesName) const;
 
+    // Resolve a rule's "sound" value to a concrete local filename.
+    // If pattern has no '*'/'?' wildcard it is returned unchanged.
+    // Otherwise a random match among local sounds/ files is returned
+    // (empty string if nothing matches).
+    Q_INVOKABLE QString pickSoundFile(const QString &pattern) const;
+
 signals:
     // Emitted once the rules JSON has been parsed (from local or freshly downloaded).
     void rulesLoaded(const QVariantList &rules);
@@ -63,7 +69,11 @@ private:
     void downloadNextMediaFile();
     QVariantList parseRulesJson(const QByteArray &data);
     void collectMediaFilenames(const QVariantList &rules,
-                               QStringList &soundFiles, QStringList &imageFiles);
+                               QStringList &soundFiles, QStringList &imageFiles,
+                               QStringList &soundPatterns, QStringList &imagePatterns);
+    void resolveWildcardPatterns();
+    void beginMediaDownloads();
+    static QStringList parseDirectoryListing(const QString &html);
     QString etagKey(const QString &rulesName) const;
     QString lastModKey(const QString &rulesName) const;
     QString mediaEtagKey(const QString &filename) const;
@@ -75,6 +85,8 @@ private:
     QString m_currentBaseUrl;
     QStringList m_pendingSounds;
     QStringList m_pendingImages;
+    QStringList m_pendingSoundPatterns;
+    QStringList m_pendingImagePatterns;
     int m_mediaTotal{0};
     int m_mediaDone{0};
     std::function<void()> m_onRulesFileDone;

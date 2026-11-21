@@ -287,7 +287,9 @@ Rectangle {
             console.log("Event triggered:", ruleName, "station", stationId)
             if (ruleName==="timer-on-4")
                 console.log ("timer rule ", rule.timer)
-            triggerEventSound(rule.sound || "")
+            triggerEventSound(fileDownloaderRef !== null
+                               ? fileDownloaderRef.pickSoundFile(rule.sound || "")
+                               : (rule.sound || ""))
             if (rule.text && rule.text !== "")
                 triggerEventText(rule.text)
             else
