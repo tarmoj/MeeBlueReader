@@ -22,6 +22,15 @@ Rectangle {
     // When true, station meters are set by dragging instead of by the Bluetooth scanner.
     property bool manualMode: false
 
+    // If no stations have been discovered yet when manual mode is turned on,
+    // create all 6 so the user has meters to drag.
+    onManualModeChanged: {
+        if (manualMode && stationModel.count === 0) {
+            for (var i = 1; i <= 6; i++)
+                applyStationReading(i, -999, rssiToProximity(-999), [])
+        }
+    }
+
     // Content-area stopwatch
     property int elapsedSeconds: 0
     property bool timerRunning: false
