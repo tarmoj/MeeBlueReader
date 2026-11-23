@@ -19,6 +19,10 @@ Rectangle {
     // Per-station tracking state: { stationId: { prevRssi, cooldowns: {name: ms} } }
     property var _stationState: ({})
 
+    // Timestamp (Date.now()) of the last reading received from the Bluetooth
+    // scanner, used by beaconWatchdog to detect a silently stalled scanner.
+    property real lastBeaconUpdateMs: Date.now()
+
     // When true, station meters are set by dragging instead of by the Bluetooth scanner.
     property bool manualMode: false
 
@@ -104,10 +108,40 @@ Rectangle {
                 console.log("App suspended — closing WebSocket")
                 socket.active = false
                 reconnectTimer.stop()
+                console.log("App suspended — stopping beacon scanning")
+                meeBlueReader.stopScanning()
             } else if (Qt.application.state === Qt.ApplicationActive) {
                 console.log("App active — opening WebSocket")
                 socket.active = true
+                // iOS/CoreLocation ranging can silently stop while backgrounded or
+                // screen-locked; always restart it explicitly on resume rather than
+                // assuming it kept running.
+                console.log("App active — restarting beacon scanning")
+                meeBlueReader.stopScanning()
+                meeBlueReader.resetReadings()
+                meeBlueReader.startScanning()
+                beaconWatchdog.restart()
             }
+        }
+    }
+
+    // Self-healing watchdog: if no station reading has arrived for a while while the
+    // app is active, the CoreLocation/BLE scanner has likely stalled silently (no
+    // error is raised by iOS in this case) — restart it rather than leaving stations
+    // pinned at their last/minimum value for the rest of the event.
+    Timer {
+        id: beaconWatchdog
+        interval: 20000
+        running: true
+        repeat: true
+        onTriggered: {
+            if (manualMode) return
+            if (Qt.application.state !== Qt.ApplicationActive) return
+            if (Date.now() - lastBeaconUpdateMs < interval) return  // readings are still flowing
+            console.log("Beacon watchdog: no readings for", interval, "ms — restarting scanning")
+            meeBlueReader.stopScanning()
+            meeBlueReader.resetReadings()
+            meeBlueReader.startScanning()
         }
     }
 
@@ -429,6 +463,7 @@ Rectangle {
     Connections {
         target: meeBlueReader
         function onNewStationInfo(stationId, rssi, proximity, beaconIds) {
+            lastBeaconUpdateMs = Date.now()
             if (manualMode) return  // ignore the Bluetooth scanner while dragging meters by hand
             applyStationReading(stationId, rssi, proximity, beaconIds)
         }

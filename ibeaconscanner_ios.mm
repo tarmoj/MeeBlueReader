@@ -14,6 +14,7 @@
 @property (nonatomic, strong) NSMutableArray<CLBeaconIdentityConstraint *> *constraints;
 
 - (instancetype)initWithQtScanner:(IBeaconScanner *)scanner;
+- (void)restartRanging;
 
 @end
 
@@ -28,8 +29,12 @@
         _monitoredRegions = [[NSMutableArray alloc] init];
         _constraints = [[NSMutableArray alloc] init];
         
-        // Request authorization for location services
-        if ([_locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)]) {
+        // Request "Always" authorization so iBeacon ranging survives screen lock /
+        // brief backgrounding during a long live event. iOS first grants
+        // "When In Use" and later prompts the user to upgrade to "Always".
+        if ([_locationManager respondsToSelector:@selector(requestAlwaysAuthorization)]) {
+            [_locationManager requestAlwaysAuthorization];
+        } else if ([_locationManager respondsToSelector:@selector(requestWhenInUseAuthorization)]) {
             [_locationManager requestWhenInUseAuthorization];
         }
     }
@@ -82,6 +87,22 @@
     
     [_monitoredRegions removeAllObjects];
     [_constraints removeAllObjects];
+}
+
+// Restarts ranging/monitoring for the already-configured regions, without
+// forgetting them. Used after a ranging failure or an authorization change,
+// where re-adding fresh regions (as startScanning does) isn't needed.
+- (void)restartRanging {
+    NSLog(@"Restarting iBeacon ranging for %lu region(s)", (unsigned long)_constraints.count);
+
+    for (CLBeaconIdentityConstraint *constraint in _constraints) {
+        [_locationManager stopRangingBeaconsSatisfyingConstraint:constraint];
+        [_locationManager startRangingBeaconsSatisfyingConstraint:constraint];
+    }
+    for (CLBeaconRegion *region in _monitoredRegions) {
+        [_locationManager stopMonitoringForRegion:region];
+        [_locationManager startMonitoringForRegion:region];
+    }
 }
 
 // CLLocationManagerDelegate methods
@@ -158,16 +179,31 @@
 
 - (void)locationManager:(CLLocationManager *)manager
        didFailWithError:(NSError *)error {
-    NSLog(@"Location manager failed with error: %@", error.localizedDescription);
+    NSLog(@"Location manager failed with error: %@ — restarting ranging", error.localizedDescription);
+    [self restartRanging];
+}
+
+// Called when ranging for a specific constraint fails (e.g. a transient
+// CoreLocation/radio hiccup). Unlike didRangeBeacons:, iOS does not retry
+// this on its own, so without this handler ranging for that constraint can
+// go silent for the rest of the session.
+- (void)locationManager:(CLLocationManager *)manager
+didFailRangingBeaconsForConstraint:(CLBeaconIdentityConstraint *)constraint
+                   error:(NSError *)error {
+    NSLog(@"Ranging failed for constraint %@: %@ — restarting ranging",
+          constraint, error.localizedDescription);
+    [_locationManager stopRangingBeaconsSatisfyingConstraint:constraint];
+    [_locationManager startRangingBeaconsSatisfyingConstraint:constraint];
 }
 
 - (void)locationManager:(CLLocationManager *)manager
 didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
     NSLog(@"Authorization status changed: %d", status);
-    
+
     if (status == kCLAuthorizationStatusAuthorizedWhenInUse ||
         status == kCLAuthorizationStatusAuthorizedAlways) {
-        NSLog(@"Location authorization granted");
+        NSLog(@"Location authorization granted — (re)starting ranging");
+        [self restartRanging];
     } else if (status == kCLAuthorizationStatusDenied ||
                status == kCLAuthorizationStatusRestricted) {
         NSLog(@"Location authorization denied or restricted");

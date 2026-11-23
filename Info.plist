@@ -56,11 +56,13 @@
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>MeTulime needs location access to detect and range iBeacons in the background.</string>
 
-    <!-- (Optional) Background modes for BLE scanning -->
+    <!-- Background modes for BLE scanning. "location" keeps iBeacon ranging
+         running if the app backgrounds or the screen locks during an event. -->
     <key>UIBackgroundModes</key>
     <array>
         <string>bluetooth-central</string>
         <string>bluetooth-peripheral</string>
+        <string>location</string>
     </array>
 
     <!-- Network permissions -->

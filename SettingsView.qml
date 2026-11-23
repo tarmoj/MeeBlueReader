@@ -104,7 +104,25 @@ Rectangle {
             }
         }
 
+        // ---- Bluetooth section -------------------------------------------------
+        RowLayout {
+            spacing: 10
 
+            Button {
+                text: qsTr("Restart Bluetooth")
+                onClicked: {
+                    meeBlueReader.stopScanning()
+                    meeBlueReader.resetReadings()
+                    meeBlueReader.startScanning()
+                    bluetoothRestartLabel.text = qsTr("Bluetooth scanning restarted")
+                }
+            }
+
+            Label {
+                id: bluetoothRestartLabel
+                text: ""
+            }
+        }
 
         // ---- Content download section ----------------------------------------
         Label {
