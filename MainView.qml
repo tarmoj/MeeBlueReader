@@ -117,8 +117,12 @@ Rectangle {
                 // screen-locked; always restart it explicitly on resume rather than
                 // assuming it kept running.
                 console.log("App active — restarting beacon scanning")
+                // Note: deliberately not calling resetReadings() here — it emits a
+                // rssi=0/"Unknown" reading for every station, including ones never
+                // detected, which get added to stationModel and read as maximum
+                // signal (rssiToLevel(0) === 1). Stale per-station filters recover
+                // on their own within a couple of readings.
                 meeBlueReader.stopScanning()
-                meeBlueReader.resetReadings()
                 meeBlueReader.startScanning()
                 beaconWatchdog.restart()
             }
@@ -140,7 +144,6 @@ Rectangle {
             if (Date.now() - lastBeaconUpdateMs < interval) return  // readings are still flowing
             console.log("Beacon watchdog: no readings for", interval, "ms — restarting scanning")
             meeBlueReader.stopScanning()
-            meeBlueReader.resetReadings()
             meeBlueReader.startScanning()
         }
     }

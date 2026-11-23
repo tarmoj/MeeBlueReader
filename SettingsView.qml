@@ -111,8 +111,10 @@ Rectangle {
             Button {
                 text: qsTr("Restart Bluetooth")
                 onClicked: {
+                    // Not calling resetReadings() — it emits a rssi=0/"Unknown"
+                    // reading for every station, including ones never detected,
+                    // which would show up on the meter as maximum signal.
                     meeBlueReader.stopScanning()
-                    meeBlueReader.resetReadings()
                     meeBlueReader.startScanning()
                     bluetoothRestartLabel.text = qsTr("Bluetooth scanning restarted")
                 }
@@ -168,6 +170,15 @@ Rectangle {
                 onClicked: {
                     if (fileDownloaderRef)
                         fileDownloaderRef.checkAndDownloadAll(contentUrlTextField.text)
+                }
+            }
+
+            Button {
+                text: qsTr("Delete all")
+                enabled: fileDownloaderRef !== null
+                onClicked: {
+                    if (fileDownloaderRef)
+                        fileDownloaderRef.deleteAllDownloadedFiles()
                 }
             }
         }

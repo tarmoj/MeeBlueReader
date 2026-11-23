@@ -7,6 +7,8 @@
 #include <QNetworkReply>
 #include <QVariantList>
 #include <QStringList>
+#include <QPair>
+#include <QList>
 #include <functional>
 
 // FileDownloader: downloads rules JSON and referenced media files from a base URL.
@@ -50,6 +52,11 @@ public:
     // (empty string if nothing matches).
     Q_INVOKABLE QString pickSoundFile(const QString &pattern) const;
 
+    // Delete every downloaded file (rules, sounds, images, other files) and
+    // the ETag/Last-Modified cache, so the next Check && Download refetches
+    // everything from scratch.
+    Q_INVOKABLE void deleteAllDownloadedFiles();
+
 signals:
     // Emitted once the rules JSON has been parsed (from local or freshly downloaded).
     void rulesLoaded(const QVariantList &rules);
@@ -76,6 +83,18 @@ private:
     void collectMediaFilenames(const QVariantList &rules,
                                QStringList &soundFiles, QStringList &imageFiles,
                                QStringList &soundPatterns, QStringList &imagePatterns);
+    // Reads the top-level "other_files" array (if the rules JSON is an object),
+    // for files that should be downloaded without being tied to any rule.
+    // Entries containing '*'/'?' are returned via patternFiles instead of
+    // literalFiles, for wildcard resolution against the server directory listing.
+    void collectOtherFiles(const QByteArray &data, QStringList &literalFiles,
+                           QStringList &patternFiles) const;
+    // Buckets an "other_files" entry (literal or pattern) into images/sounds/pdf
+    // by extension (empty string if the extension isn't recognized).
+    static QString otherFileSubdir(const QString &filename);
+    // True if filename is already queued for download (any pending list), so
+    // wildcard-resolved other_files don't get downloaded twice.
+    bool isAlreadyPending(const QString &filename, const QString &subdir) const;
     void resolveWildcardPatterns();
     void beginMediaDownloads();
     static QStringList parseDirectoryListing(const QString &html);
@@ -92,6 +111,12 @@ private:
     QStringList m_pendingImages;
     QStringList m_pendingSoundPatterns;
     QStringList m_pendingImagePatterns;
+    // {filename, subdir} for "other_files" entries, subdir resolved up front
+    // to one of "images", "sounds", "pdf".
+    QList<QPair<QString, QString>> m_pendingOtherFiles;
+    // {pattern, subdir} for "other_files" entries containing '*'/'?', awaiting
+    // resolution against the matching server directory listing.
+    QList<QPair<QString, QString>> m_pendingOtherFilePatterns;
     int m_mediaTotal{0};
     int m_mediaDone{0};
     std::function<void()> m_onRulesFileDone;

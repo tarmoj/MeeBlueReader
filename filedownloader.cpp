@@ -25,6 +25,7 @@ FileDownloader::FileDownloader(QObject *parent)
     dir.mkpath(m_localDataPath + "/rules");
     dir.mkpath(m_localDataPath + "/sounds");
     dir.mkpath(m_localDataPath + "/images");
+    dir.mkpath(m_localDataPath + "/pdf");
 }
 
 QString FileDownloader::localDataPath() const
@@ -72,16 +73,43 @@ void FileDownloader::processRulesDataAndFetchMedia(const QByteArray &data, const
     QStringList sounds, images, soundPatterns, imagePatterns;
     collectMediaFilenames(rules, sounds, images, soundPatterns, imagePatterns);
 
+    QStringList otherLiteral, otherPatterns;
+    collectOtherFiles(data, otherLiteral, otherPatterns);
+
+    QList<QPair<QString, QString>> pendingOtherFiles;
+    for (const QString &filename : otherLiteral) {
+        const QString subdir = otherFileSubdir(filename);
+        if (subdir.isEmpty()) {
+            qWarning() << "FileDownloader: other_files entry has unrecognized extension, skipping:" << filename;
+            continue;
+        }
+        if (subdir == "images" && images.contains(filename)) continue;
+        if (subdir == "sounds" && sounds.contains(filename)) continue;
+        pendingOtherFiles.append({filename, subdir});
+    }
+
+    QList<QPair<QString, QString>> pendingOtherFilePatterns;
+    for (const QString &pattern : otherPatterns) {
+        const QString subdir = otherFileSubdir(pattern);
+        if (subdir.isEmpty()) {
+            qWarning() << "FileDownloader: other_files pattern has unrecognized extension, skipping:" << pattern;
+            continue;
+        }
+        pendingOtherFilePatterns.append({pattern, subdir});
+    }
+
     qDebug() << "FileDownloader: rules have" << sounds.size()
              << "sounds," << images.size() << "images," << soundPatterns.size()
-             << "sound wildcards," << imagePatterns.size() << "image wildcards to check";
+             << "sound wildcards," << imagePatterns.size() << "image wildcards,"
+             << pendingOtherFiles.size() << "other_files,"
+             << pendingOtherFilePatterns.size() << "other_files wildcards to check";
 
     // Reload rules right away so the app picks them up immediately;
     // media referenced by the rules keeps downloading in the background.
     emit rulesLoaded(rules);
 
-    if (sounds.isEmpty() && images.isEmpty()
-        && soundPatterns.isEmpty() && imagePatterns.isEmpty()) {
+    if (sounds.isEmpty() && images.isEmpty() && pendingOtherFiles.isEmpty()
+        && soundPatterns.isEmpty() && imagePatterns.isEmpty() && pendingOtherFilePatterns.isEmpty()) {
         emit statusMessage(tr("Done"));
         if (onDone) onDone();
         return;
@@ -92,6 +120,8 @@ void FileDownloader::processRulesDataAndFetchMedia(const QByteArray &data, const
     m_pendingImages   = images;
     m_pendingSoundPatterns = soundPatterns;
     m_pendingImagePatterns = imagePatterns;
+    m_pendingOtherFiles = pendingOtherFiles;
+    m_pendingOtherFilePatterns = pendingOtherFilePatterns;
     m_onRulesFileDone = onDone;
     emit statusMessage(tr("Resolving media…"));
     resolveWildcardPatterns();
@@ -305,12 +335,48 @@ void FileDownloader::resolveWildcardPatterns()
         return;
     }
 
+    if (!m_pendingOtherFilePatterns.isEmpty()) {
+        // Resolve one subdir's worth of patterns per round-trip (images/sounds/pdf
+        // can each appear among other_files patterns).
+        const QString subdir = m_pendingOtherFilePatterns.first().second;
+        QStringList patternsForSubdir;
+        QList<QPair<QString, QString>> remaining;
+        for (const auto &entry : std::as_const(m_pendingOtherFilePatterns)) {
+            if (entry.second == subdir)
+                patternsForSubdir << entry.first;
+            else
+                remaining << entry;
+        }
+        m_pendingOtherFilePatterns = remaining;
+
+        const QString url = m_currentBaseUrl + "/" + subdir + "/";
+        QNetworkReply *reply = m_nam.get(QNetworkRequest(QUrl(url)));
+        connect(reply, &QNetworkReply::finished, this, [this, reply, subdir, patternsForSubdir]() {
+            reply->deleteLater();
+            if (reply->error() == QNetworkReply::NoError) {
+                const QStringList names = parseDirectoryListing(QString::fromUtf8(reply->readAll()));
+                for (const QString &pattern : patternsForSubdir) {
+                    const QRegularExpression re(QRegularExpression::wildcardToRegularExpression(pattern));
+                    for (const QString &name : names) {
+                        if (re.match(name).hasMatch() && !isAlreadyPending(name, subdir))
+                            m_pendingOtherFiles.append({name, subdir});
+                    }
+                }
+            } else {
+                emit statusMessage(tr("Could not list %1 for wildcard other_files (%2)")
+                                        .arg(subdir, reply->errorString()));
+            }
+            resolveWildcardPatterns();
+        });
+        return;
+    }
+
     beginMediaDownloads();
 }
 
 void FileDownloader::beginMediaDownloads()
 {
-    if (m_pendingSounds.isEmpty() && m_pendingImages.isEmpty()) {
+    if (m_pendingSounds.isEmpty() && m_pendingImages.isEmpty() && m_pendingOtherFiles.isEmpty()) {
         emit statusMessage(tr("Done"));
         const std::function<void()> onDone = m_onRulesFileDone;
         m_onRulesFileDone = nullptr;
@@ -318,7 +384,7 @@ void FileDownloader::beginMediaDownloads()
         return;
     }
 
-    m_mediaTotal = m_pendingSounds.size() + m_pendingImages.size();
+    m_mediaTotal = m_pendingSounds.size() + m_pendingImages.size() + m_pendingOtherFiles.size();
     m_mediaDone  = 0;
     emit statusMessage(tr("Downloading media (0/%1)…").arg(m_mediaTotal));
     downloadNextMediaFile();
@@ -326,7 +392,7 @@ void FileDownloader::beginMediaDownloads()
 
 void FileDownloader::downloadNextMediaFile()
 {
-    // Pick next pending file: sounds first, then images
+    // Pick next pending file: sounds first, then images, then other_files
     QString subdir;
     QString filename;
     if (!m_pendingSounds.isEmpty()) {
@@ -335,6 +401,10 @@ void FileDownloader::downloadNextMediaFile()
     } else if (!m_pendingImages.isEmpty()) {
         filename = m_pendingImages.takeFirst();
         subdir   = "images";
+    } else if (!m_pendingOtherFiles.isEmpty()) {
+        const auto entry = m_pendingOtherFiles.takeFirst();
+        filename = entry.first;
+        subdir   = entry.second;
     } else {
         // All done
         emit statusMessage(tr("Done"));
@@ -448,6 +518,81 @@ void FileDownloader::collectMediaFilenames(const QVariantList &rules,
     imageFiles    = QStringList(images.begin(), images.end());
     soundPatterns = QStringList(soundPat.begin(), soundPat.end());
     imagePatterns = QStringList(imagePat.begin(), imagePat.end());
+}
+
+void FileDownloader::collectOtherFiles(const QByteArray &data, QStringList &literalFiles,
+                                       QStringList &patternFiles) const
+{
+    literalFiles.clear();
+    patternFiles.clear();
+
+    QJsonParseError err;
+    const QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject())
+        return;
+
+    const QJsonObject obj = doc.object();
+    if (!obj.contains("other_files") || !obj["other_files"].isArray())
+        return;
+
+    for (const QJsonValue &v : obj["other_files"].toArray()) {
+        const QString filename = v.toString().trimmed();
+        if (filename.isEmpty())
+            continue;
+        if (filename.contains('*') || filename.contains('?'))
+            patternFiles << filename;
+        else
+            literalFiles << filename;
+    }
+}
+
+QString FileDownloader::otherFileSubdir(const QString &filename)
+{
+    const QString ext = filename.section('.', -1).toLower();
+    static const QSet<QString> imageExts = {"png", "jpg", "jpeg", "gif", "bmp", "webp"};
+    static const QSet<QString> soundExts = {"mp3", "wav", "m4a", "aac", "ogg", "flac"};
+    if (imageExts.contains(ext))
+        return "images";
+    if (soundExts.contains(ext))
+        return "sounds";
+    if (ext == "pdf")
+        return "pdf";
+    return QString();
+}
+
+bool FileDownloader::isAlreadyPending(const QString &filename, const QString &subdir) const
+{
+    if (subdir == "images" && m_pendingImages.contains(filename))
+        return true;
+    if (subdir == "sounds" && m_pendingSounds.contains(filename))
+        return true;
+    for (const auto &entry : m_pendingOtherFiles) {
+        if (entry.first == filename && entry.second == subdir)
+            return true;
+    }
+    return false;
+}
+
+void FileDownloader::deleteAllDownloadedFiles()
+{
+    const QStringList subdirs = {"rules", "sounds", "images", "pdf"};
+    for (const QString &subdir : subdirs) {
+        QDir dir(m_localDataPath + "/" + subdir);
+        for (const QString &entry : dir.entryList(QDir::Files))
+            dir.remove(entry);
+    }
+
+    // Clear ETag/Last-Modified cache so the next Check && Download refetches
+    // everything instead of getting 304 Not Modified for files we just deleted.
+    QSettings s;
+    const QStringList keys = s.allKeys();
+    for (const QString &key : keys) {
+        if (key.startsWith("etag/") || key.startsWith("lastmod/"))
+            s.remove(key);
+    }
+
+    qDebug() << "FileDownloader: deleted all downloaded files";
+    emit statusMessage(tr("Deleted all downloaded files."));
 }
 
 QString FileDownloader::etagKey(const QString &rulesName) const
