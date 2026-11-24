@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(MeeBlueReader VERSION 0.8.3 LANGUAGES CXX)
+project(MeeBlueReader VERSION 0.8.99 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Bluetooth Core Gui Multimedia Network Quick WebSockets CorePrivate)
+find_package(Qt6 REQUIRED COMPONENTS Bluetooth Core Gui Multimedia Network Pdf Quick WebSockets CorePrivate)
 
 
 qt_standard_project_setup(REQUIRES 6.9)
@@ -44,7 +44,7 @@ qt_add_qml_module(appMeeBlueReader
     URI MeeBlueReader
     VERSION 1.0
     QML_FILES
-        Main.qml MainView.qml SettingsView.qml StationInfo.qml
+        Main.qml MainView.qml SettingsView.qml StationInfo.qml PdfViewer.qml
     RESOURCES android/AndroidManifest.xml android/build.gradle android/res/values/libs.xml android/res/xml/qtprovider_paths.xml android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.properties android/gradle.properties android/gradlew android/gradlew.bat
     RESOURCES refactoring-notes.md
 
@@ -97,6 +97,7 @@ target_link_libraries(appMeeBlueReader PUBLIC
     Qt::Gui
     Qt::Multimedia
     Qt::Network
+    Qt::Pdf
     Qt::Quick
     Qt::WebSockets
     Qt::CorePrivate

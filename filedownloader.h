@@ -36,9 +36,10 @@ public:
     // Read the already-downloaded rules file and emit rulesLoaded immediately.
     Q_INVOKABLE void loadLocalRules(const QString &rulesName);
 
-    // List locally available sound/image files (base names, sorted).
+    // List locally available sound/image/pdf files (base names, sorted).
     Q_INVOKABLE QStringList listSoundFiles() const;
     Q_INVOKABLE QStringList listImageFiles() const;
+    Q_INVOKABLE QStringList listPdfFiles() const;
 
     // Read the raw content of a local rules{N}.json file (empty string if missing).
     Q_INVOKABLE QString readRulesFileContent(const QString &rulesName) const;
@@ -82,7 +83,8 @@ private:
     QVariantList parseRulesJson(const QByteArray &data);
     void collectMediaFilenames(const QVariantList &rules,
                                QStringList &soundFiles, QStringList &imageFiles,
-                               QStringList &soundPatterns, QStringList &imagePatterns);
+                               QStringList &soundPatterns, QStringList &imagePatterns,
+                               QStringList &pdfFiles, QStringList &pdfPatterns);
     // Reads the top-level "other_files" array (if the rules JSON is an object),
     // for files that should be downloaded without being tied to any rule.
     // Entries containing '*'/'?' are returned via patternFiles instead of

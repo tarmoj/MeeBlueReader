@@ -269,6 +269,21 @@ Rectangle {
         notationImage.source = path
     }
 
+    // Open a PDF from local data directory (file:// URL), fullscreen by default.
+    // Pass "none" to close the currently open PDF without opening a new one.
+    function triggerEventPdf(fileName) {
+        if (!fileName || fileName === "") return
+        if (fileName.toLowerCase() === "none") {
+            pdfViewer.source = ""
+            return
+        }
+        if (fileDownloaderRef === null) return
+        const path = "file://" + fileDownloaderRef.localDataPath + "/pdf/" + fileName
+        console.log("triggerEventPdf:", path)
+        pdfViewer.fullscreen = true
+        pdfViewer.source = path
+    }
+
     // Display a text message in the content area.
     // Pass "none" to clear the current text without showing a new one.
     function triggerEventText(msg) {
@@ -339,7 +354,9 @@ Rectangle {
             triggerEventSound(fileDownloaderRef !== null
                                ? fileDownloaderRef.pickSoundFile(rule.sound || "")
                                : (rule.sound || ""))
-            if (rule.text && rule.text !== "")
+            if (rule.pdf && rule.pdf !== "")
+                triggerEventPdf(rule.pdf)
+            else if (rule.text && rule.text !== "")
                 triggerEventText(rule.text)
             else
                 triggerEventImage(rule.image || "")
@@ -376,9 +393,12 @@ Rectangle {
         const images = fileDownloaderRef.listImageFiles()
         for (let j = 0; j < images.length; j++)
             mediaModel.append({ "label": images[j], "fileName": images[j], "kind": "image" })
+        const pdfs = fileDownloaderRef.listPdfFiles()
+        for (let k = 0; k < pdfs.length; k++)
+            mediaModel.append({ "label": pdfs[k], "fileName": pdfs[k], "kind": "pdf" })
     }
 
-    // Selects mediaModel[index] in the combo box and triggers its sound/image.
+    // Selects mediaModel[index] in the combo box and triggers its sound/image/pdf.
     function activateMediaItem(index) {
         if (index < 0 || index >= mediaModel.count) return
         mediaCombo.currentIndex = index
@@ -387,6 +407,8 @@ Rectangle {
             triggerEventSound(item.fileName)
         else if (item.kind === "image")
             triggerEventImage(item.fileName)
+        else if (item.kind === "pdf")
+            triggerEventPdf(item.fileName)
     }
 
     Connections {
@@ -691,6 +713,11 @@ Rectangle {
                 //color: "white"
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
+            }
+
+            PdfViewer {
+                id: pdfViewer
+                dockParent: contentArea
             }
 
         }

@@ -70,11 +70,23 @@ void FileDownloader::processRulesDataAndFetchMedia(const QByteArray &data, const
                                                     std::function<void()> onDone)
 {
     const QVariantList rules = parseRulesJson(data);
-    QStringList sounds, images, soundPatterns, imagePatterns;
-    collectMediaFilenames(rules, sounds, images, soundPatterns, imagePatterns);
+    QStringList sounds, images, soundPatterns, imagePatterns, pdfFiles, pdfPatterns;
+    collectMediaFilenames(rules, sounds, images, soundPatterns, imagePatterns, pdfFiles, pdfPatterns);
 
     QStringList otherLiteral, otherPatterns;
     collectOtherFiles(data, otherLiteral, otherPatterns);
+
+    // Merge rule-referenced PDFs (rule.pdf) in with top-level other_files, deduped,
+    // so a rule can reference a PDF without also needing a redundant other_files entry.
+    QSet<QString> literalSet(otherLiteral.begin(), otherLiteral.end());
+    for (const QString &pdf : pdfFiles)
+        literalSet.insert(pdf);
+    otherLiteral = QStringList(literalSet.begin(), literalSet.end());
+
+    QSet<QString> patternSet(otherPatterns.begin(), otherPatterns.end());
+    for (const QString &pattern : pdfPatterns)
+        patternSet.insert(pattern);
+    otherPatterns = QStringList(patternSet.begin(), patternSet.end());
 
     QList<QPair<QString, QString>> pendingOtherFiles;
     for (const QString &filename : otherLiteral) {
@@ -250,6 +262,12 @@ QString FileDownloader::pickSoundFile(const QString &pattern) const
 QStringList FileDownloader::listImageFiles() const
 {
     QDir dir(m_localDataPath + "/images");
+    return dir.entryList(QDir::Files, QDir::Name);
+}
+
+QStringList FileDownloader::listPdfFiles() const
+{
+    QDir dir(m_localDataPath + "/pdf");
     return dir.entryList(QDir::Files, QDir::Name);
 }
 
@@ -494,13 +512,16 @@ void FileDownloader::collectMediaFilenames(const QVariantList &rules,
                                            QStringList &soundFiles,
                                            QStringList &imageFiles,
                                            QStringList &soundPatterns,
-                                           QStringList &imagePatterns)
+                                           QStringList &imagePatterns,
+                                           QStringList &pdfFiles,
+                                           QStringList &pdfPatterns)
 {
-    QSet<QString> sounds, images, soundPat, imagePat;
+    QSet<QString> sounds, images, soundPat, imagePat, pdfs, pdfPat;
     for (const QVariant &v : rules) {
         const QVariantMap ev = v.toMap();
         const QString sound  = ev.value("sound").toString().trimmed();
         const QString image  = ev.value("image").toString().trimmed();
+        const QString pdf    = ev.value("pdf").toString().trimmed();
         if (!sound.isEmpty()) {
             if (sound.contains('*') || sound.contains('?'))
                 soundPat.insert(sound);
@@ -513,11 +534,19 @@ void FileDownloader::collectMediaFilenames(const QVariantList &rules,
             else
                 images.insert(image);
         }
+        if (!pdf.isEmpty() && pdf.compare("none", Qt::CaseInsensitive) != 0) {
+            if (pdf.contains('*') || pdf.contains('?'))
+                pdfPat.insert(pdf);
+            else
+                pdfs.insert(pdf);
+        }
     }
     soundFiles    = QStringList(sounds.begin(), sounds.end());
     imageFiles    = QStringList(images.begin(), images.end());
     soundPatterns = QStringList(soundPat.begin(), soundPat.end());
     imagePatterns = QStringList(imagePat.begin(), imagePat.end());
+    pdfFiles      = QStringList(pdfs.begin(), pdfs.end());
+    pdfPatterns   = QStringList(pdfPat.begin(), pdfPat.end());
 }
 
 void FileDownloader::collectOtherFiles(const QByteArray &data, QStringList &literalFiles,
