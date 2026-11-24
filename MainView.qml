@@ -60,7 +60,7 @@ Rectangle {
         property bool wasConnected: false
 
         onTextMessageReceived: function (message) {
-            console.log("WS message received:", message)
+            handleServerCommand(message)
         }
 
         onStatusChanged: {
@@ -294,6 +294,49 @@ Rectangle {
         }
         notationImage.source = ""
         eventText.text = msg
+    }
+
+    // Dispatches plain-text commands received over the WebSocket from the
+    // server: "timer start"/"timer stop", "open {filename}", "clear",
+    // "notification {message}". Distinct from the JSON station-reading
+    // messages sent the other way (client -> server).
+    function handleServerCommand(message) {
+        const msg = message.trim()
+        if (msg === "timer start")
+            startContentTimer()
+        else if (msg === "timer stop")
+            stopContentTimer()
+        else if (msg === "clear")
+            clearContent()
+        else if (msg.startsWith("open "))
+            openFileByExtension(msg.substring(5).trim())
+        else if (msg.startsWith("notification "))
+            notificationBanner.message = msg.substring(13)
+        else
+            console.log("WS message received (unrecognized):", message)
+    }
+
+    // Clears image/text/sound/pdf content. Shared by the Clear button and
+    // the "clear" server command.
+    function clearContent() {
+        notationImage.source = ""
+        eventText.text = ""
+        soundPlayer.stop()
+        pdfViewer.source = ""
+    }
+
+    // Opens a bare filename (no path) by inferring its type from the
+    // extension, for the "open {filename}" server command.
+    function openFileByExtension(fileName) {
+        const ext = fileName.split('.').pop().toLowerCase()
+        if (["png", "jpg", "jpeg", "gif", "bmp", "webp"].includes(ext))
+            triggerEventImage(fileName)
+        else if (["mp3", "wav", "m4a", "aac", "ogg", "flac"].includes(ext))
+            triggerEventSound(fileName)
+        else if (ext === "pdf")
+            triggerEventPdf(fileName)
+        else
+            console.warn("openFileByExtension: unrecognized extension:", fileName)
     }
 
     function formatElapsed(sec) {
@@ -673,11 +716,7 @@ Rectangle {
                 ToolButton {
                     id: clearButton
                     text: qsTr("Clear")
-                    onClicked: {
-                        notationImage.source = ""
-                        eventText.text = ""
-                        soundPlayer.stop()
-                    }
+                    onClicked: clearContent()
                 }
             }
 
@@ -718,6 +757,10 @@ Rectangle {
             PdfViewer {
                 id: pdfViewer
                 dockParent: contentArea
+            }
+
+            NotificationBanner {
+                id: notificationBanner
             }
 
         }
